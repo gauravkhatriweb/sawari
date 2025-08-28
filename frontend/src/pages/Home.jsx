@@ -66,6 +66,35 @@ const Home = () => {
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
   }
 
+  // Footer navigation items with same pattern as Navbar
+  const footerSections = {
+    passengers: [
+      { id: 'passengers', label: 'Affordable Rides' },
+      { id: 'passengers', label: 'Safety First' },
+      { id: 'passengers', label: 'Seamless Booking' }
+    ],
+    drivers: [
+      { id: 'drivers', label: 'Instant Earnings' },
+      { id: 'drivers', label: 'Flexible Hours' },
+      { id: 'drivers', label: 'Lowest Commission' }
+    ],
+    company: [
+      { path: '/about', label: 'About' },
+      { path: '/legal/terms', label: 'Terms' },
+      { path: '/legal/privacy', label: 'Privacy' },
+      { id: 'contact', label: 'Contact' },
+      { path: '/legal/faq', label: 'FAQ' }
+    ]
+  }
+
+  const handleFooterNavigation = (item) => {
+    if (item.path) {
+      navigate(item.path)
+    } else if (item.id) {
+      scrollTo(item.id)
+    }
+  }
+
   // Note: Using imported Navbar component instead of local one to get authentication features
 
   // Hero section with solid dark background, parallax illustrations, and animated text
@@ -174,16 +203,16 @@ const Home = () => {
           </div>
           <p className='mt-3 text-sm text-white/80'>Pakistan’s smarter way to move. Affordable, safe, and always on time.</p>
           <div className='mt-4 flex items-center gap-3 text-white/80'>
-            <a aria-label='Facebook' href='#' className='inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10'>
+            <a aria-label='Facebook' href='#' className='inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors'>
               <svg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M15 3h-3a5 5 0 0 0-5 5v3H5v4h2v6h4v-6h3l1-4h-4V8a1 1 0 0 1 1-1h3V3z' fill='currentColor' /></svg>
             </a>
-            <a aria-label='Twitter' href='#' className='inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10'>
+            <a aria-label='Twitter' href='#' className='inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors'>
               <svg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M22 5.8c-.7.3-1.4.5-2.1.6.8-.5 1.3-1.1 1.6-2-.8.5-1.6.8-2.5 1A3.6 3.6 0 0 0 12 7.6c0 .3 0 .6.1.9-3-.1-5.7-1.6-7.5-4-.3.6-.4 1.2-.4 1.9 0 1.3.7 2.6 1.8 3.3-.6 0-1.2-.2-1.7-.5v.1c0 1.9 1.3 3.6 3.1 4a3.6 3.6 0 0 1-1.6.1c.5 1.6 2 2.8 3.7 2.8A7.3 7.3 0 0 1 2 19.5 10.3 10.3 0 0 0 7.6 21c6.9 0 10.7-5.7 10.7-10.7v-.5c.7-.5 1.3-1.1 1.7-1.8z' fill='currentColor' /></svg>
             </a>
-            <a aria-label='Instagram' href='#' className='inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10'>
+            <a aria-label='Instagram' href='#' className='inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors'>
               <svg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M7 3h10a4 4 0 0 1 4 4v10a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4V7a4 4 0 0 1 4-4zm5 4a5 5 0 1 0 .001 10.001A5 5 0 0 0 12 7zm6-1a1 1 0 1 0 0 2 1 1 0 0 0 0-2z' fill='currentColor' /></svg>
             </a>
-            <a aria-label='LinkedIn' href='#' className='inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10'>
+            <a aria-label='LinkedIn' href='#' className='inline-flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 transition-colors'>
               <svg width='16' height='16' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'><path d='M6 6a2 2 0 1 1 0 4 2 2 0 0 1 0-4zm-2 6h4v8H4v-8zm6 0h3.6v1.1h.1c.5-.8 1.6-1.3 2.7-1.3 2.9 0 3.5 1.9 3.5 4.3V20h-4v-3.6c0-.9 0-2-1.2-2s-1.4 1-1.4 1.9V20h-4v-8z' fill='currentColor' /></svg>
             </a>
           </div>
@@ -191,27 +220,46 @@ const Home = () => {
         <div>
           <h4 className='font-semibold'>For Passengers</h4>
           <ul className='mt-3 space-y-2 text-sm text-white/80'>
-            <li><a href='#passengers' className='hover:underline'>Affordable Rides</a></li>
-            <li><a href='#passengers' className='hover:underline'>Safety First</a></li>
-            <li><a href='#passengers' className='hover:underline'>Seamless Booking</a></li>
+            {footerSections.passengers.map((item, index) => (
+              <li key={index}>
+                <button 
+                  onClick={() => handleFooterNavigation(item)}
+                  className='hover:underline hover:text-white transition-colors cursor-pointer text-left'
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
         <div>
           <h4 className='font-semibold'>For Drivers</h4>
           <ul className='mt-3 space-y-2 text-sm text-white/80'>
-            <li><a href='#drivers' className='hover:underline'>Instant Earnings</a></li>
-            <li><a href='#drivers' className='hover:underline'>Flexible Hours</a></li>
-            <li><a href='#drivers' className='hover:underline'>Lowest Commission</a></li>
+            {footerSections.drivers.map((item, index) => (
+              <li key={index}>
+                <button 
+                  onClick={() => handleFooterNavigation(item)}
+                  className='hover:underline hover:text-white transition-colors cursor-pointer text-left'
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
         <div>
           <h4 className='font-semibold'>Company</h4>
           <ul className='mt-3 space-y-2 text-sm text-white/80'>
-            <li><a href='/about' className='hover:underline'>About</a></li>
-            <li><a href='/legal/terms' className='hover:underline'>Terms</a></li>
-            <li><a href='/legal/privacy' className='hover:underline'>Privacy</a></li>
-            <li><a href='/legal/contact' className='hover:underline'>Contact</a></li>
-            <li><a href='/legal/faq' className='hover:underline'>FAQ</a></li>
+            {footerSections.company.map((item, index) => (
+              <li key={index}>
+                <button 
+                  onClick={() => handleFooterNavigation(item)}
+                  className='hover:underline hover:text-white transition-colors cursor-pointer text-left'
+                >
+                  {item.label}
+                </button>
+              </li>
+            ))}
           </ul>
         </div>
       </div>
