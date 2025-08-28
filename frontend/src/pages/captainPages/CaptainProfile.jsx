@@ -3,10 +3,10 @@ import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
 import { useUser } from '../../context/UserContext'
-import Navbar from '../../components/Navbar'
+import CaptainNavbar from '../../components/CaptainNavbar'
 import axios from 'axios'
 
-const PassengerProfile = () => {
+const CaptainProfile = () => {
   const navigate = useNavigate()
   const { user, isAuthenticated, logout, updateUserProfile } = useUser()
   const [profile, setProfile] = useState(null)
@@ -20,18 +20,29 @@ const PassengerProfile = () => {
   const [isUploading, setIsUploading] = useState(false)
   const [showUploadModal, setShowUploadModal] = useState(false)
 
-  // Redirect if not authenticated or not a passenger
+  // Redirect if not authenticated or not a captain
   useEffect(() => {
-    if (!isAuthenticated || !user || user.type !== 'passenger') {
-      navigate('/passenger/login')
-      return
-    }
+    // Only redirect if we're sure the user is not authenticated
+    // Add a small delay to allow authentication state to settle
+    const timer = setTimeout(() => {
+      if (!isAuthenticated || !user || user.type !== 'captain') {
+        console.log('Authentication check failed:', { isAuthenticated, user, userType: user?.type })
+        navigate('/captain/login')
+        return
+      }
+    }, 100) // 100ms delay to allow auth state to settle
+    
+    return () => clearTimeout(timer)
   }, [isAuthenticated, user, navigate])
 
-  // Fetch passenger profile from API
+  // Fetch captain profile from API
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!isAuthenticated || !user || user.type !== 'passenger') return
+      console.log('fetchProfile called:', { isAuthenticated, user, userType: user?.type })
+      if (!isAuthenticated || !user || user.type !== 'captain') {
+        console.log('Skipping profile fetch due to auth check')
+        return
+      }
 
       try {
         setLoading(true)
@@ -49,7 +60,7 @@ const PassengerProfile = () => {
 
         const apiBase = (import.meta.env.VITE_API_BASE_URL && String(import.meta.env.VITE_API_BASE_URL).trim().replace(/\/+$/, '')) || 'http://localhost:3000'
         
-        const { data } = await axios.get(`${apiBase}/api/passengers/profile`, {
+        const { data } = await axios.get(`${apiBase}/api/captain/profile`, {
           withCredentials: true,
           headers: {
             'Accept': 'application/json',
@@ -58,8 +69,8 @@ const PassengerProfile = () => {
           },
         })
 
-        if (data.success && data.passenger) {
-          setProfile(data.passenger)
+        if (data.success && data.captain) {
+          setProfile(data.captain)
         } else {
           setError('Failed to load profile data')
         }
@@ -71,7 +82,7 @@ const PassengerProfile = () => {
         
         // If unauthorized, redirect to login
         if (err?.response?.status === 401) {
-          navigate('/passenger/login')
+          navigate('/captain/login')
         }
       } finally {
         setLoading(false)
@@ -87,11 +98,11 @@ const PassengerProfile = () => {
       setIsLogoutLoading(true)
       await logout()
       toast.success('Logged out successfully')
-      navigate('/passenger/login')
+      navigate('/captain/login')
     } catch (err) {
       console.error('Logout error:', err)
       toast.error('Logout failed, but you have been signed out locally')
-      navigate('/passenger/login')
+      navigate('/captain/login')
     } finally {
       setIsLogoutLoading(false)
     }
@@ -156,17 +167,20 @@ const PassengerProfile = () => {
 
       if (!token) {
         toast.error('Authentication required. Please login again.')
-        navigate('/passenger/login')
+        navigate('/captain/login')
         return
       }
 
+      const apiBase = (import.meta.env.VITE_API_BASE_URL && String(import.meta.env.VITE_API_BASE_URL).trim().replace(/\/+$/, '')) || 'http://localhost:3000'
+      
       const formData = new FormData()
       formData.append('profilePic', selectedFile)
 
       const response = await axios.post(
-        'http://localhost:3000/api/passengers/upload-profile-pic',
+        `${apiBase}/api/captain/upload-profile-pic`,
         formData,
         {
+          withCredentials: true,
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
@@ -192,7 +206,7 @@ const PassengerProfile = () => {
       console.error('Upload error:', error)
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.')
-        navigate('/passenger/login')
+        navigate('/captain/login')
       } else {
         toast.error(error.response?.data?.message || 'Failed to upload profile picture')
       }
@@ -221,17 +235,20 @@ const PassengerProfile = () => {
 
       if (!token) {
         toast.error('Authentication required. Please login again.')
-        navigate('/passenger/login')
+        navigate('/captain/login')
         return
       }
 
+      const apiBase = (import.meta.env.VITE_API_BASE_URL && String(import.meta.env.VITE_API_BASE_URL).trim().replace(/\/+$/, '')) || 'http://localhost:3000'
+      
       const formData = new FormData()
       formData.append('profilePic', selectedFile)
 
       const response = await axios.put(
-        'http://localhost:3000/api/passengers/update-profile-pic',
+        `${apiBase}/api/captain/update-profile-pic`,
         formData,
         {
+          withCredentials: true,
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'multipart/form-data'
@@ -257,7 +274,7 @@ const PassengerProfile = () => {
       console.error('Update error:', error)
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.')
-        navigate('/passenger/login')
+        navigate('/captain/login')
       } else {
         toast.error(error.response?.data?.message || 'Failed to update profile picture')
       }
@@ -290,13 +307,16 @@ const PassengerProfile = () => {
 
       if (!token) {
         toast.error('Authentication required. Please login again.')
-        navigate('/passenger/login')
+        navigate('/captain/login')
         return
       }
 
+      const apiBase = (import.meta.env.VITE_API_BASE_URL && String(import.meta.env.VITE_API_BASE_URL).trim().replace(/\/+$/, '')) || 'http://localhost:3000'
+      
       const response = await axios.delete(
-        'http://localhost:3000/api/passengers/delete-profile-pic',
+        `${apiBase}/api/captain/delete-profile-pic`,
         {
+          withCredentials: true,
           headers: {
             'Authorization': `Bearer ${token}`
           }
@@ -317,7 +337,7 @@ const PassengerProfile = () => {
       console.error('Delete error:', error)
       if (error.response?.status === 401) {
         toast.error('Session expired. Please login again.')
-        navigate('/passenger/login')
+        navigate('/captain/login')
       } else {
         toast.error(error.response?.data?.message || 'Failed to delete profile picture')
       }
@@ -336,7 +356,7 @@ const PassengerProfile = () => {
   if (loading) {
     return (
       <div className='min-h-screen bg-[#1A1A1A] text-white'>
-        <Navbar />
+        <CaptainNavbar />
         <div className='flex items-center justify-center min-h-[calc(100vh-56px)]'>
           <div className='flex items-center gap-3'>
             <svg className='w-6 h-6 animate-spin text-[#4DA6FF]' viewBox='0 0 24 24'>
@@ -350,45 +370,9 @@ const PassengerProfile = () => {
     )
   }
 
-  // Show error state
-  if (error) {
-    return (
-      <div className='min-h-screen bg-[#1A1A1A] text-white'>
-        <Navbar />
-        <div className='flex items-center justify-center min-h-[calc(100vh-56px)]'>
-          <div className='text-center max-w-md mx-auto px-6'>
-            <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center'>
-              <svg className='w-8 h-8 text-red-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
-              </svg>
-            </div>
-            <h2 className='text-xl font-semibold mb-2' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Unable to Load Profile</h2>
-            <p className='text-gray-300 mb-6' style={{ fontFamily: 'Inter, system-ui' }}>{error}</p>
-            <div className='flex gap-3 justify-center'>
-              <button
-                onClick={() => window.location.reload()}
-                className='px-4 py-2 bg-[#4DA6FF] text-white rounded-lg font-medium hover:bg-[#4DA6FF]/90 transition-colors'
-                style={{ fontFamily: 'Inter, system-ui' }}
-              >
-                Try Again
-              </button>
-              <Link
-                to='/'
-                className='px-4 py-2 border border-white/20 text-white rounded-lg font-medium hover:bg-white/5 transition-colors'
-                style={{ fontFamily: 'Inter, system-ui' }}
-              >
-                Go Home
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-    )
-  }
-
   return (
     <div className='min-h-screen bg-[#1A1A1A] text-white'>
-      <Navbar />
+      <CaptainNavbar />
       
       {/* Background gradient orbs */}
       <div className='pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-[#4DA6FF] via-[#EFBFFF] to-[#FFD65C] blur-3xl opacity-20' />
@@ -403,10 +387,10 @@ const PassengerProfile = () => {
           {/* Header */}
           <div className='mb-8'>
             <h1 className='text-3xl font-bold mb-2' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
-              Profile
+              Captain Profile
             </h1>
             <p className='text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
-              Manage your account information and settings
+              Manage your captain account information and settings
             </p>
           </div>
 
@@ -436,7 +420,7 @@ const PassengerProfile = () => {
                       />
                     ) : null}
                     <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] ${profile?.profilePic ? 'hidden' : 'flex'}`}>
-                      {profile?.firstname?.charAt(0)?.toUpperCase() || profile?.firstName?.charAt(0)?.toUpperCase() || 'U'}
+                      {profile?.firstname?.charAt(0)?.toUpperCase() || profile?.firstName?.charAt(0)?.toUpperCase() || 'C'}
                     </div>
                   </div>
                   
@@ -489,7 +473,7 @@ const PassengerProfile = () => {
                 {/* Profile Info */}
                 <div className='flex-1 text-center sm:text-left'>
                   <h2 className='text-xl font-semibold text-white mb-1' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
-                    {profile?.firstname || profile?.firstName || 'Unknown'} {profile?.lastname || profile?.lastName || ''}
+                    Captain {profile?.firstname || profile?.firstName || 'Unknown'} {profile?.lastname || profile?.lastName || ''}
                   </h2>
                   <p className='text-gray-300 mb-2' style={{ fontFamily: 'Inter, system-ui' }}>
                     {profile?.email || 'No email provided'}
@@ -518,11 +502,11 @@ const PassengerProfile = () => {
 
             {/* Profile Details */}
             <div className='p-6'>
-              <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
-                {/* Account Information */}
+              <div className='grid grid-cols-1 lg:grid-cols-2 gap-8'>
+                {/* Personal Information */}
                 <div>
                   <h3 className='text-lg font-semibold mb-4 text-[#4DA6FF]' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
-                    Account Information
+                    Personal Information
                   </h3>
                   <div className='space-y-4'>
                     <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
@@ -543,39 +527,45 @@ const PassengerProfile = () => {
                         {profile?.email || 'Not provided'}
                       </p>
                     </div>
+                    <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
+                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Account Status</label>
+                      <p className='text-white mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
+                        {profile?.status || 'inactive'}
+                      </p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Account Details */}
+                {/* Vehicle Information */}
                 <div>
                   <h3 className='text-lg font-semibold mb-4 text-[#EFBFFF]' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
-                    Account Details
+                    Vehicle Information
                   </h3>
                   <div className='space-y-4'>
                     <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
-                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Account ID</label>
-                      <p className='text-white mt-1 font-mono text-sm break-all' style={{ fontFamily: 'Inter, system-ui' }}>
-                        {profile?._id || 'Not available'}
+                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Vehicle Type</label>
+                      <p className='text-white mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
+                        {profile?.vehicle?.type || 'Not provided'}
                       </p>
                     </div>
                     <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
-                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Member Since</label>
+                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Make & Model</label>
                       <p className='text-white mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
-                        {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        }) : 'Not available'}
+                        {profile?.vehicle?.make && profile?.vehicle?.model 
+                          ? `${profile.vehicle.make} ${profile.vehicle.model}` 
+                          : 'Not provided'}
                       </p>
                     </div>
                     <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
-                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Last Updated</label>
+                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Number Plate</label>
+                      <p className='text-white mt-1 font-mono text-lg tracking-wider' style={{ fontFamily: 'JetBrains Mono, monospace' }}>
+                        {profile?.vehicle?.numberPlate || 'Not provided'}
+                      </p>
+                    </div>
+                    <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
+                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Capacity</label>
                       <p className='text-white mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
-                        {profile?.updatedAt ? new Date(profile.updatedAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric'
-                        }) : 'Not available'}
+                        {profile?.vehicle?.capacity ? `${profile.vehicle.capacity} passengers` : 'Not provided'}
                       </p>
                     </div>
                   </div>
@@ -590,7 +580,7 @@ const PassengerProfile = () => {
                       Account Actions
                     </h3>
                     <p className='text-sm text-gray-400' style={{ fontFamily: 'Inter, system-ui' }}>
-                      Manage your account settings and preferences
+                      Manage your captain account settings and preferences
                     </p>
                   </div>
                   <div className='flex flex-col sm:flex-row gap-3'>
@@ -615,14 +605,14 @@ const PassengerProfile = () => {
                     
                     {/* Back to Home */}
                     <Link
-                      to='/'
+                      to='/captain/home'
                       className='inline-flex items-center gap-2 px-4 py-2 bg-[#4DA6FF] text-white rounded-lg hover:bg-[#4DA6FF]/90 transition-colors'
                       style={{ fontFamily: 'Inter, system-ui' }}
                     >
                       <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                         <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6' />
                       </svg>
-                      Back to Home
+                      Back to Dashboard
                     </Link>
                   </div>
                 </div>
@@ -742,4 +732,4 @@ const PassengerProfile = () => {
   )
 }
 
-export default PassengerProfile
+export default CaptainProfile

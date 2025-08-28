@@ -18,6 +18,7 @@ const Navbar = () => {
   const [isVerified, setIsVerified] = useState(false)
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isActionLoading, setIsActionLoading] = useState(false)
+  const [profileData, setProfileData] = useState(null) // Store full profile data including profilePic
   const dropdownRef = useRef(null)
   
   // Determine if user is a passenger and extract passenger data
@@ -74,6 +75,7 @@ const Navbar = () => {
     const checkVerificationStatus = async () => {
       if (!isPassengerAuth || !passenger) {
         setIsVerified(false)
+        setProfileData(null)
         return
       }
       
@@ -97,12 +99,14 @@ const Navbar = () => {
           },
         })
         
-        // Check verification status from API response
+        // Check verification status from API response and store profile data
         const verified = Boolean(data?.passenger?.isAccountVerified || data?.passenger?.isVerified)
         setIsVerified(verified)
+        setProfileData(data?.passenger || null) // Store full profile data including profilePic
       } catch (_) {
         // If profile fetch fails, assume not verified
         setIsVerified(false)
+        setProfileData(null)
       }
     }
     
@@ -225,8 +229,21 @@ const Navbar = () => {
               <button onClick={() => navigate('/passenger/login')} className='rounded-full bg-[#4DA6FF] hover:brightness-110 px-4 py-2 text-white text-sm font-semibold shadow hover:shadow-lg transition'>Login</button>
             ) : (
               <>
-                <button onClick={() => setIsDropdownOpen((o) => !o)} className='bg-[#4DA6FF] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4DA6FF]'>
-                  {String(passenger?.firstname || passenger?.firstName || '?').charAt(0).toUpperCase()}
+                <button onClick={() => setIsDropdownOpen((o) => !o)} className='relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center font-bold text-white shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4DA6FF] border-2 border-white/20 hover:border-white/30 transition-all duration-300'>
+                  {profileData?.profilePic ? (
+                    <img 
+                      src={`http://localhost:3000${profileData.profilePic}`} 
+                      alt='Profile' 
+                      className='w-full h-full object-cover'
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
+                    {String(passenger?.firstname || passenger?.firstName || '?').charAt(0).toUpperCase()}
+                  </div>
                 </button>
                 <AnimatePresence>
                   {isDropdownOpen && (
@@ -239,14 +256,40 @@ const Navbar = () => {
                     >
                       {/* User info header */}
                       <div className='px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#4DA6FF]/10 via-[#EFBFFF]/10 to-[#7CE7E1]/10'>
-                        <p className='text-sm font-semibold' style={{ fontFamily: 'Inter, system-ui' }}>
-                          {passenger?.firstname || passenger?.firstName || 'User'}
-                        </p>
-                        <p className='text-xs text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
-                          {passenger?.email || 'user@example.com'}
-                        </p>
+                        {/* Profile Picture and User Info */}
+                        <div className='flex items-center gap-3 mb-2'>
+                          {/* Profile Picture in Dropdown */}
+                          <div className='relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center font-bold text-white shadow-lg border-2 border-white/20'>
+                            {profileData?.profilePic ? (
+                              <img 
+                                src={`http://localhost:3000${profileData.profilePic}`} 
+                                alt='Profile' 
+                                className='w-full h-full object-cover'
+                                onError={(e) => {
+                                  e.target.style.display = 'none'
+                                  e.target.nextSibling.style.display = 'flex'
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] text-lg ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
+                              {String(passenger?.firstname || passenger?.firstName || '?').charAt(0).toUpperCase()}
+                            </div>
+                          </div>
+                          
+                          {/* User Details */}
+                          <div className='flex-1'>
+                            <p className='text-sm font-semibold' style={{ fontFamily: 'Inter, system-ui' }}>
+                              {passenger?.firstname || passenger?.firstName || 'User'}
+                            </p>
+                            <p className='text-xs text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
+                              {passenger?.email || 'user@example.com'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Verification Status */}
                         {!isVerified && (
-                          <div className='mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300'>
+                          <div className='inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300'>
                             <span className='text-xs'>⚠️</span>
                             <span className='text-xs font-medium'>Unverified</span>
                           </div>
@@ -334,8 +377,21 @@ const Navbar = () => {
                 <button onClick={() => { setMenuOpen(false); navigate('/passenger/login') }} className='rounded-full bg-[#4DA6FF] hover:brightness-110 px-4 py-2 text-white text-sm font-semibold shadow hover:shadow-lg transition'>Login</button>
               ) : (
                 <div className='relative w-full'>
-                  <button onClick={() => setIsDropdownOpen((o) => !o)} className='bg-[#4DA6FF] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow'>
-                    {String(passenger?.firstname || passenger?.firstName || '?').charAt(0).toUpperCase()}
+                  <button onClick={() => setIsDropdownOpen((o) => !o)} className='relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center font-bold text-white shadow border-2 border-white/20'>
+                    {profileData?.profilePic ? (
+                      <img 
+                        src={`http://localhost:3000${profileData.profilePic}`} 
+                        alt='Profile' 
+                        className='w-full h-full object-cover'
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                          e.target.nextSibling.style.display = 'flex'
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
+                      {String(passenger?.firstname || passenger?.firstName || '?').charAt(0).toUpperCase()}
+                    </div>
                   </button>
                   <AnimatePresence>
                     {isDropdownOpen && (
@@ -348,14 +404,40 @@ const Navbar = () => {
                       >
                         {/* User info header */}
                         <div className='px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#4DA6FF]/10 via-[#EFBFFF]/10 to-[#7CE7E1]/10'>
-                          <p className='text-sm font-semibold' style={{ fontFamily: 'Inter, system-ui' }}>
-                            {passenger?.firstname || passenger?.firstName || 'User'}
-                          </p>
-                          <p className='text-xs text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
-                            {passenger?.email || 'user@example.com'}
-                          </p>
+                          {/* Profile Picture and User Info */}
+                          <div className='flex items-center gap-3 mb-2'>
+                            {/* Profile Picture in Mobile Dropdown */}
+                            <div className='relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center font-bold text-white shadow-lg border-2 border-white/20'>
+                              {profileData?.profilePic ? (
+                                <img 
+                                  src={`http://localhost:3000${profileData.profilePic}`} 
+                                  alt='Profile' 
+                                  className='w-full h-full object-cover'
+                                  onError={(e) => {
+                                    e.target.style.display = 'none'
+                                    e.target.nextSibling.style.display = 'flex'
+                                  }}
+                                />
+                              ) : null}
+                              <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] text-lg ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
+                                {String(passenger?.firstname || passenger?.firstName || '?').charAt(0).toUpperCase()}
+                              </div>
+                            </div>
+                            
+                            {/* User Details */}
+                            <div className='flex-1'>
+                              <p className='text-sm font-semibold' style={{ fontFamily: 'Inter, system-ui' }}>
+                                {passenger?.firstname || passenger?.firstName || 'User'}
+                              </p>
+                              <p className='text-xs text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
+                                {passenger?.email || 'user@example.com'}
+                              </p>
+                            </div>
+                          </div>
+                          
+                          {/* Verification Status */}
                           {!isVerified && (
-                            <div className='mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300'>
+                            <div className='inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300'>
                               <span className='text-xs'>⚠️</span>
                               <span className='text-xs font-medium'>Unverified</span>
                             </div>

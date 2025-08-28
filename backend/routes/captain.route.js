@@ -1,7 +1,8 @@
 
 import express from 'express';
-import { registerCaptain, loginCaptain, logoutCaptain, getCaptainProfile , sendResetPasswordOtp, resetPassword, sendVerificationOtp, verifyOtp, isAuthenticated} from '../controllers/captain.controller.js';
+import { registerCaptain, loginCaptain, logoutCaptain, getCaptainProfile , sendResetPasswordOtp, resetPassword, sendVerificationOtp, verifyOtp, isAuthenticated, uploadProfilePicture, updateProfilePicture, deleteProfilePicture} from '../controllers/captain.controller.js';
 import { verifyCaptainJWT } from '../middleware/auth.middleware.js';
+import upload, { handleUploadError } from '../middleware/upload.middleware.js';
 
 const router = express.Router();
 
@@ -15,5 +16,10 @@ router.post('/logout', verifyCaptainJWT, logoutCaptain);
 router.post('/send-verification-otp', verifyCaptainJWT, sendVerificationOtp);
 router.post('/verify-otp', verifyCaptainJWT, verifyOtp);
 router.post('/is-authenticated', verifyCaptainJWT, isAuthenticated);
+
+// Profile picture routes
+router.post('/upload-profile-pic', verifyCaptainJWT, upload.single('profilePic'), handleUploadError, uploadProfilePicture);
+router.put('/update-profile-pic', verifyCaptainJWT, upload.single('profilePic'), handleUploadError, updateProfilePicture);
+router.delete('/delete-profile-pic', verifyCaptainJWT, deleteProfilePicture);
 
 export default router;

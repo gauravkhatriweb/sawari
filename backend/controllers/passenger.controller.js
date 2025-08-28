@@ -2,12 +2,15 @@
 import PassengerModel from "../models/passenger.model.js";
 import CaptainModel from "../models/captain.model.js";
 import bcrypt from 'bcrypt';
+import path from 'path';
+import fs from 'fs';
 import { sendEmail } from '../services/email.service.js';
 import {
     getPassengerWelcomeEmailHTML,
     getPassengerVerifyOtpEmailHTML,
     getPassengerResetPasswordEmailHTML,
 } from "../templates/passengerEmail.template.js";
+import { deleteOldProfilePic } from '../middleware/upload.middleware.js';
 
 // Constants
 const OTP_EXPIRY_MINUTES = 10; // 10 minutes
@@ -538,6 +541,178 @@ export const resetPassword = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: 'Internal server error while resetting password'
+        });
+    }
+}
+
+/**
+ * Upload profile picture
+ * @route POST /api/passengers/upload-profile-pic
+ * @protected
+ */
+export const uploadProfilePicture = async (req, res) => {
+    try {
+        // Check if file was uploaded
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded. Please select an image file.'
+            });
+        }
+
+        // Get passenger ID from auth middleware
+        const passengerId = req.passenger._id;
+
+        // Find passenger and get current profile picture
+        const passenger = await PassengerModel.findById(passengerId);
+        if (!passenger) {
+            // Delete uploaded file if passenger not found
+            if (req.file && req.file.filename) {
+                deleteOldProfilePic(req.file.filename);
+            }
+            return res.status(404).json({
+                success: false,
+                message: 'Passenger not found'
+            });
+        }
+
+        // Delete old profile picture if exists
+        if (passenger.profilePic) {
+            const oldFileName = path.basename(passenger.profilePic);
+            deleteOldProfilePic(oldFileName);
+        }
+
+        // Update passenger with new profile picture path
+        const profilePicPath = `/uploads/profile-pictures/${req.file.filename}`;
+        passenger.profilePic = profilePicPath;
+        await passenger.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Profile picture uploaded successfully',
+            profilePic: profilePicPath
+        });
+    } catch (error) {
+        console.error('Upload Profile Picture Error:', error);
+        
+        // Delete uploaded file in case of error
+        if (req.file && req.file.filename) {
+            deleteOldProfilePic(req.file.filename);
+        }
+        
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error while uploading profile picture'
+        });
+    }
+}
+
+/**
+ * Update profile picture
+ * @route PUT /api/passengers/update-profile-pic
+ * @protected
+ */
+export const updateProfilePicture = async (req, res) => {
+    try {
+        // Check if file was uploaded
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded. Please select an image file.'
+            });
+        }
+
+        // Get passenger ID from auth middleware
+        const passengerId = req.passenger._id;
+
+        // Find passenger and get current profile picture
+        const passenger = await PassengerModel.findById(passengerId);
+        if (!passenger) {
+            // Delete uploaded file if passenger not found
+            if (req.file && req.file.filename) {
+                deleteOldProfilePic(req.file.filename);
+            }
+            return res.status(404).json({
+                success: false,
+                message: 'Passenger not found'
+            });
+        }
+
+        // Delete old profile picture if exists
+        if (passenger.profilePic) {
+            const oldFileName = path.basename(passenger.profilePic);
+            deleteOldProfilePic(oldFileName);
+        }
+
+        // Update passenger with new profile picture path
+        const profilePicPath = `/uploads/profile-pictures/${req.file.filename}`;
+        passenger.profilePic = profilePicPath;
+        await passenger.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Profile picture updated successfully',
+            profilePic: profilePicPath
+        });
+    } catch (error) {
+        console.error('Update Profile Picture Error:', error);
+        
+        // Delete uploaded file in case of error
+        if (req.file && req.file.filename) {
+            deleteOldProfilePic(req.file.filename);
+        }
+        
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error while updating profile picture'
+        });
+    }
+}
+
+/**
+ * Delete profile picture
+ * @route DELETE /api/passengers/delete-profile-pic
+ * @protected
+ */
+export const deleteProfilePicture = async (req, res) => {
+    try {
+        // Get passenger ID from auth middleware
+        const passengerId = req.passenger._id;
+
+        // Find passenger
+        const passenger = await PassengerModel.findById(passengerId);
+        if (!passenger) {
+            return res.status(404).json({
+                success: false,
+                message: 'Passenger not found'
+            });
+        }
+
+        // Check if passenger has a profile picture
+        if (!passenger.profilePic) {
+            return res.status(400).json({
+                success: false,
+                message: 'No profile picture to delete'
+            });
+        }
+
+        // Delete file from storage
+        const fileName = path.basename(passenger.profilePic);
+        deleteOldProfilePic(fileName);
+
+        // Remove profile picture from database
+        passenger.profilePic = null;
+        await passenger.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Profile picture deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete Profile Picture Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error while deleting profile picture'
         });
     }
 }

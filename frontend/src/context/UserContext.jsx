@@ -118,6 +118,38 @@ export const UserProvider = ({ children }) => {
     }
   }
 
+  // Function to update user profile data (for real-time sync across components)
+  const updateUserProfile = (updatedData) => {
+    if (!user || !isAuthenticated) return
+    
+    const updatedUser = { ...user, ...updatedData }
+    setUser(updatedUser)
+    
+    // Update persisted storage as well
+    try {
+      const rawLocal = localStorage.getItem('sawari_auth')
+      const rawSession = sessionStorage.getItem('sawari_auth')
+      const raw = rawLocal || rawSession
+      
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        const updatedPayload = {
+          ...parsed,
+          user: updatedUser
+        }
+        
+        const newPayload = JSON.stringify(updatedPayload)
+        if (rawLocal) {
+          localStorage.setItem('sawari_auth', newPayload)
+        } else if (rawSession) {
+          sessionStorage.setItem('sawari_auth', newPayload)
+        }
+      }
+    } catch (_) {
+      // ignore storage errors
+    }
+  }
+
   const value = useMemo(() => ({
     user,
     isAuthenticated,
@@ -127,6 +159,7 @@ export const UserProvider = ({ children }) => {
     loginPassenger,
     loginCaptain,
     logout,
+    updateUserProfile,
   }), [user, isAuthenticated, loading])
 
   return (

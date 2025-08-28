@@ -274,13 +274,15 @@ frontend/
 │   │   │   ├── 🔐 PassengerForgotPassword.jsx
 │   │   │   ├── 🔑 PassengerResetPassword.jsx
 │   │   │   ├── ✅ PassengerVerifyOtp.jsx
-│   │   │   └── 👤 PassengerProfile.jsx
+│   │   │   ├── 👤 PassengerProfile.jsx      # 🖼️ Profile picture management
+│   │   │   └── 🏠 PassengerHome.jsx
 │   │   ├── 📁 captainPages/        # Captain-specific pages
 │   │   │   ├── 🔐 CaptainLogin.jsx
 │   │   │   ├── ✍️ CaptainRegister.jsx
 │   │   │   ├── 🔐 CaptainForgotPassword.jsx
 │   │   │   ├── 🔑 CaptainResetPassword.jsx
 │   │   │   ├── ✅ CaptainVerifyOtp.jsx
+│   │   │   ├── 👤 CaptainProfile.jsx       # 🖼️ Profile picture management
 │   │   │   └── 🏠 CaptainHome.jsx
 │   │   ├── 📁 legalPages/          # Legal & support pages
 │   │   │   ├── 📋 TermsPage.jsx
@@ -316,6 +318,7 @@ frontend/
 | `express-validator` | `^7.2.1` | ![Latest](https://img.shields.io/badge/Latest-green) | ✅ Input validation |
 | `jsonwebtoken` | `^9.0.2` | ![Latest](https://img.shields.io/badge/Latest-green) | 🔑 JWT implementation |
 | `mongoose` | `^8.18.0` | ![Latest](https://img.shields.io/badge/Latest-green) | 🗄️ MongoDB ODM |
+| `multer` | `^1.4.5-lts.1` | ![Latest](https://img.shields.io/badge/Latest-green) | 📤 File upload middleware |
 | `nodemailer` | `^7.0.5` | ![Latest](https://img.shields.io/badge/Latest-green) | 📧 Email sending service |
 | `nodemon` | `^3.1.10` | ![Latest](https://img.shields.io/badge/Latest-green) | 🔄 Auto-restart dev server |
 
@@ -379,6 +382,93 @@ npm start
 
 ---
 
+## 🖼️ Profile Picture Configuration
+
+<div align="center">
+
+**Complete profile picture system with file upload, validation, and management** 🎆
+
+![Profile Picture Feature](https://img.shields.io/badge/Profile%20Pictures-Ready-brightgreen?style=for-the-badge)
+![File Upload](https://img.shields.io/badge/File%20Upload-Multer-blue?style=for-the-badge)
+![Validation](https://img.shields.io/badge/Validation-Complete-green?style=for-the-badge)
+
+</div>
+
+### 📦 **File Upload System**
+
+<div align="center">
+
+| Feature | Details | Status |
+|---------|---------|--------|
+| **📁 Storage Location** | `./uploads/profile-pictures/` | ✅ Auto-created |
+| **📄 File Types** | JPG, JPEG, PNG only | ✅ Validated |
+| **📍 File Size** | Maximum 2MB per file | ✅ Enforced |
+| **📝 Naming Convention** | `{userId}_{timestamp}.{ext}` | ✅ Unique |
+| **🗑️ Auto Cleanup** | Old files deleted on update | ✅ Implemented |
+
+</div>
+
+### ⚙️ **Multer Middleware Configuration**
+
+```javascript
+// File upload configuration
+const upload = multer({
+  storage: multer.diskStorage({
+    destination: './uploads/profile-pictures/',
+    filename: (req, file, cb) => {
+      const userId = req.passenger?._id || req.captain?._id;
+      const timestamp = Date.now();
+      const ext = path.extname(file.originalname);
+      cb(null, `${userId}_${timestamp}${ext}`);
+    }
+  }),
+  limits: {
+    fileSize: 2 * 1024 * 1024, // 2MB limit
+    files: 1 // Only one file allowed
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png/;
+    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+    const mimetype = allowedTypes.test(file.mimetype);
+    
+    if (mimetype && extname) {
+      return cb(null, true);
+    } else {
+      cb(new Error('Only JPG, JPEG, and PNG files are allowed'), false);
+    }
+  }
+});
+```
+
+### 📈 **API Endpoints Summary**
+
+<div align="center">
+
+| **User Type** | **Upload** | **Update** | **Delete** | **Authentication** |
+|---------------|------------|------------|------------|--------------------|
+| **👥 Passenger** | `POST /api/passengers/upload-profile-pic` | `PUT /api/passengers/update-profile-pic` | `DELETE /api/passengers/delete-profile-pic` | JWT Required |
+| **🚗 Captain** | `POST /api/captain/upload-profile-pic` | `PUT /api/captain/update-profile-pic` | `DELETE /api/captain/delete-profile-pic` | JWT Required |
+
+</div>
+
+### 🔒 **Security Features**
+
+- **🔐 Authentication Required**: Only logged-in users can manage their own profile pictures
+- **📋 File Type Validation**: Server-side validation prevents malicious file uploads
+- **📍 Size Limits**: 2MB maximum prevents server storage abuse
+- **🗑️ Automatic Cleanup**: Old profile pictures are deleted when updated/removed
+- **🗂 Error Handling**: Comprehensive error responses for all scenarios
+
+### 🌐 **Frontend Integration**
+
+- **🖼️ Navbar Display**: Profile pictures appear in navigation bars with gradient fallbacks
+- **📝 Profile Pages**: Full upload/update/delete interface with drag-and-drop
+- **📨 Real-time Sync**: Immediate updates across all components without page refresh
+- **📱 Responsive Design**: Works seamlessly on desktop, tablet, and mobile
+- **✨ Animations**: Smooth transitions and loading states using Framer Motion
+
+---
+
 ## 📚 Backend API Reference
 
 ### 🔐 Authentication Endpoints
@@ -396,6 +486,9 @@ npm start
 | `POST` | `/api/passengers/is-authenticated` | Check authentication status | ✅ Yes | ✅ Ready |
 | `POST` | `/api/passengers/send-reset-password-otp` | Send password reset OTP | ❌ No | ✅ Ready |
 | `POST` | `/api/passengers/reset-password` | Reset password with OTP | ❌ No | ✅ Ready |
+| `POST` | `/api/passengers/upload-profile-pic` | Upload profile picture | ✅ Yes | ✅ Ready |
+| `PUT` | `/api/passengers/update-profile-pic` | Update profile picture | ✅ Yes | ✅ Ready |
+| `DELETE` | `/api/passengers/delete-profile-pic` | Delete profile picture | ✅ Yes | ✅ Ready |
 | `POST` | `/api/captain/register` | Register a new captain | ❌ No | ✅ Ready |
 | `POST` | `/api/captain/login` | Captain login | ❌ No | ✅ Ready |
 | `GET` | `/api/captain/profile` | Get captain profile | ✅ Yes | ✅ Ready |
@@ -405,6 +498,9 @@ npm start
 | `POST` | `/api/captain/is-authenticated` | Check authentication status | ✅ Yes | ✅ Ready |
 | `POST` | `/api/captain/send-reset-password-otp` | Send password reset OTP | ❌ No | ✅ Ready |
 | `POST` | `/api/captain/reset-password` | Reset password with OTP | ❌ No | ✅ Ready |
+| `POST` | `/api/captain/upload-profile-pic` | Upload profile picture | ✅ Yes | ✅ Ready |
+| `PUT` | `/api/captain/update-profile-pic` | Update profile picture | ✅ Yes | ✅ Ready |
+| `DELETE` | `/api/captain/delete-profile-pic` | Delete profile picture | ✅ Yes | ✅ Ready |
 
 </div>
 
@@ -919,6 +1015,194 @@ Code: 200 OK
 </div>
 
 **💡 Note:** This endpoint resets the passenger's password using the OTP sent to their email. The new password must be different from the current one.
+
+---
+
+### 1️⃣🔟 Upload Passenger Profile Picture
+
+<div align="center">
+
+**`POST` `/api/passengers/upload-profile-pic`**
+
+![Auth Required](https://img.shields.io/badge/Auth%20Required-Yes-green?style=for-the-badge)
+
+</div>
+
+#### 🔑 Headers
+
+```
+Authorization: Bearer <jwt-token>
+Content-Type: multipart/form-data
+```
+
+#### 📝 Request Body (Form Data)
+
+| Parameter | Type | Required | Description | Validation |
+|-----------|------|----------|-------------|------------|
+| `profilePic` | File | ✅ Yes | Image file for profile picture | JPG/JPEG/PNG, max 2MB |
+
+#### 📤 Example Request
+
+```javascript
+const formData = new FormData();
+formData.append('profilePic', selectedFile);
+
+fetch('/api/passengers/upload-profile-pic', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  },
+  body: formData
+});
+```
+
+#### ✅ Success Response
+
+```
+Code: 200 OK
+```
+
+```json
+{
+  "success": true,
+  "message": "Profile picture uploaded successfully",
+  "profilePic": "/uploads/profile-pictures/64f8a1b2c3d4e5f6a7b8c9d0_1673788800000.jpg"
+}
+```
+
+#### ❌ Error Responses
+
+<div align="center">
+
+| Status | Error Type | Response |
+|--------|------------|----------|
+| `400` | No file uploaded | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `400` | Invalid file type | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `400` | File too large | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `401` | No token | ![Unauthorized](https://img.shields.io/badge/401-Unauthorized-orange) |
+| `404` | Passenger not found | ![Not Found](https://img.shields.io/badge/404-Not%20Found-red) |
+| `500` | Internal server error | ![Server Error](https://img.shields.io/badge/500-Server%20Error-red) |
+
+</div>
+
+**💡 Note:** This endpoint uploads a new profile picture for the authenticated passenger. If a profile picture already exists, it will be replaced and the old file will be deleted. Maximum file size is 2MB. Accepted formats: JPG, JPEG, PNG.
+
+---
+
+### 2️⃣🔟 Update Passenger Profile Picture
+
+<div align="center">
+
+**`PUT` `/api/passengers/update-profile-pic`**
+
+![Auth Required](https://img.shields.io/badge/Auth%20Required-Yes-green?style=for-the-badge)
+
+</div>
+
+#### 🔑 Headers
+
+```
+Authorization: Bearer <jwt-token>
+Content-Type: multipart/form-data
+```
+
+#### 📝 Request Body (Form Data)
+
+| Parameter | Type | Required | Description | Validation |
+|-----------|------|----------|-------------|------------|
+| `profilePic` | File | ✅ Yes | New image file for profile picture | JPG/JPEG/PNG, max 2MB |
+
+#### 📤 Example Request
+
+```javascript
+const formData = new FormData();
+formData.append('profilePic', selectedFile);
+
+fetch('/api/passengers/update-profile-pic', {
+  method: 'PUT',
+  headers: {
+    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  },
+  body: formData
+});
+```
+
+#### ✅ Success Response
+
+```
+Code: 200 OK
+```
+
+```json
+{
+  "success": true,
+  "message": "Profile picture updated successfully",
+  "profilePic": "/uploads/profile-pictures/64f8a1b2c3d4e5f6a7b8c9d0_1673788900000.jpg"
+}
+```
+
+#### ❌ Error Responses
+
+<div align="center">
+
+| Status | Error Type | Response |
+|--------|------------|----------|
+| `400` | No file uploaded | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `400` | Invalid file type | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `400` | File too large | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `401` | No token | ![Unauthorized](https://img.shields.io/badge/401-Unauthorized-orange) |
+| `404` | Passenger not found | ![Not Found](https://img.shields.io/badge/404-Not%20Found-red) |
+| `500` | Internal server error | ![Server Error](https://img.shields.io/badge/500-Server%20Error-red) |
+
+</div>
+
+**💡 Note:** This endpoint updates an existing profile picture for the authenticated passenger. The old profile picture file will be automatically deleted from the server. If no profile picture exists, this works the same as upload.
+
+---
+
+### 2️⃣1️⃣ Delete Passenger Profile Picture
+
+<div align="center">
+
+**`DELETE` `/api/passengers/delete-profile-pic`**
+
+![Auth Required](https://img.shields.io/badge/Auth%20Required-Yes-green?style=for-the-badge)
+
+</div>
+
+#### 🔑 Headers
+
+```
+Authorization: Bearer <jwt-token>
+```
+
+#### ✅ Success Response
+
+```
+Code: 200 OK
+```
+
+```json
+{
+  "success": true,
+  "message": "Profile picture deleted successfully"
+}
+```
+
+#### ❌ Error Responses
+
+<div align="center">
+
+| Status | Error Type | Response |
+|--------|------------|----------|
+| `400` | No profile picture | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `401` | No token | ![Unauthorized](https://img.shields.io/badge/401-Unauthorized-orange) |
+| `404` | Passenger not found | ![Not Found](https://img.shields.io/badge/404-Not%20Found-red) |
+| `500` | Internal server error | ![Server Error](https://img.shields.io/badge/500-Server%20Error-red) |
+
+</div>
+
+**💡 Note:** This endpoint deletes the authenticated passenger's profile picture. The file is permanently removed from the server and the `profilePic` field in the database is set to `null`.
 
 ---
 
@@ -1526,6 +1810,194 @@ Code: 200 OK
 
 ---
 
+### 2️⃣2️⃣ Upload Captain Profile Picture
+
+<div align="center">
+
+**`POST` `/api/captain/upload-profile-pic`**
+
+![Auth Required](https://img.shields.io/badge/Auth%20Required-Yes-green?style=for-the-badge)
+
+</div>
+
+#### 🔑 Headers
+
+```
+Authorization: Bearer <jwt-token>
+Content-Type: multipart/form-data
+```
+
+#### 📝 Request Body (Form Data)
+
+| Parameter | Type | Required | Description | Validation |
+|-----------|------|----------|-------------|------------|
+| `profilePic` | File | ✅ Yes | Image file for profile picture | JPG/JPEG/PNG, max 2MB |
+
+#### 📤 Example Request
+
+```javascript
+const formData = new FormData();
+formData.append('profilePic', selectedFile);
+
+fetch('/api/captain/upload-profile-pic', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  },
+  body: formData
+});
+```
+
+#### ✅ Success Response
+
+```
+Code: 200 OK
+```
+
+```json
+{
+  "success": true,
+  "message": "Profile picture uploaded successfully",
+  "profilePic": "/uploads/profile-pictures/64f8a1b2c3d4e5f6a7b8c9d0_1673788800000.jpg"
+}
+```
+
+#### ❌ Error Responses
+
+<div align="center">
+
+| Status | Error Type | Response |
+|--------|------------|----------|
+| `400` | No file uploaded | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `400` | Invalid file type | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `400` | File too large | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `401` | No token | ![Unauthorized](https://img.shields.io/badge/401-Unauthorized-orange) |
+| `404` | Captain not found | ![Not Found](https://img.shields.io/badge/404-Not%20Found-red) |
+| `500` | Internal server error | ![Server Error](https://img.shields.io/badge/500-Server%20Error-red) |
+
+</div>
+
+**💡 Note:** This endpoint uploads a new profile picture for the authenticated captain. If a profile picture already exists, it will be replaced and the old file will be deleted. Maximum file size is 2MB. Accepted formats: JPG, JPEG, PNG.
+
+---
+
+### 2️⃣3️⃣ Update Captain Profile Picture
+
+<div align="center">
+
+**`PUT` `/api/captain/update-profile-pic`**
+
+![Auth Required](https://img.shields.io/badge/Auth%20Required-Yes-green?style=for-the-badge)
+
+</div>
+
+#### 🔑 Headers
+
+```
+Authorization: Bearer <jwt-token>
+Content-Type: multipart/form-data
+```
+
+#### 📝 Request Body (Form Data)
+
+| Parameter | Type | Required | Description | Validation |
+|-----------|------|----------|-------------|------------|
+| `profilePic` | File | ✅ Yes | New image file for profile picture | JPG/JPEG/PNG, max 2MB |
+
+#### 📤 Example Request
+
+```javascript
+const formData = new FormData();
+formData.append('profilePic', selectedFile);
+
+fetch('/api/captain/update-profile-pic', {
+  method: 'PUT',
+  headers: {
+    'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...'
+  },
+  body: formData
+});
+```
+
+#### ✅ Success Response
+
+```
+Code: 200 OK
+```
+
+```json
+{
+  "success": true,
+  "message": "Profile picture updated successfully",
+  "profilePic": "/uploads/profile-pictures/64f8a1b2c3d4e5f6a7b8c9d0_1673788900000.jpg"
+}
+```
+
+#### ❌ Error Responses
+
+<div align="center">
+
+| Status | Error Type | Response |
+|--------|------------|----------|
+| `400` | No file uploaded | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `400` | Invalid file type | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `400` | File too large | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `401` | No token | ![Unauthorized](https://img.shields.io/badge/401-Unauthorized-orange) |
+| `404` | Captain not found | ![Not Found](https://img.shields.io/badge/404-Not%20Found-red) |
+| `500` | Internal server error | ![Server Error](https://img.shields.io/badge/500-Server%20Error-red) |
+
+</div>
+
+**💡 Note:** This endpoint updates an existing profile picture for the authenticated captain. The old profile picture file will be automatically deleted from the server. If no profile picture exists, this works the same as upload.
+
+---
+
+### 2️⃣4️⃣ Delete Captain Profile Picture
+
+<div align="center">
+
+**`DELETE` `/api/captain/delete-profile-pic`**
+
+![Auth Required](https://img.shields.io/badge/Auth%20Required-Yes-green?style=for-the-badge)
+
+</div>
+
+#### 🔑 Headers
+
+```
+Authorization: Bearer <jwt-token>
+```
+
+#### ✅ Success Response
+
+```
+Code: 200 OK
+```
+
+```json
+{
+  "success": true,
+  "message": "Profile picture deleted successfully"
+}
+```
+
+#### ❌ Error Responses
+
+<div align="center">
+
+| Status | Error Type | Response |
+|--------|------------|----------|
+| `400` | No profile picture | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `401` | No token | ![Unauthorized](https://img.shields.io/badge/401-Unauthorized-orange) |
+| `404` | Captain not found | ![Not Found](https://img.shields.io/badge/404-Not%20Found-red) |
+| `500` | Internal server error | ![Server Error](https://img.shields.io/badge/500-Server%20Error-red) |
+
+</div>
+
+**💡 Note:** This endpoint deletes the authenticated captain's profile picture. The file is permanently removed from the server and the `profilePic` field in the database is set to `null`.
+
+---
+
 ## 🚖 Captain-Specific Features
 
 <div align="center">
@@ -1623,6 +2095,11 @@ Code: 200 OK
     lowercase: true,
     validate: email format
   },
+  profilePic: {
+    type: String,
+    default: null,
+    validate: JPG/JPEG/PNG format  // 🖼️ Profile picture path
+  },
   password: {
     type: String,
     required: true,
@@ -1676,6 +2153,311 @@ Code: 200 OK
     unique: true,
     lowercase: true,
     validate: email format
+  },
+  profilePic: {
+    type: String,
+    default: null,
+    validate: JPG/JPEG/PNG format  // 🖼️ Profile picture path
+  },
+  password: {
+    type: String,
+    required: true,
+    select: false  // 🔒 Hidden from queries by default
+  },
+  socketId: {
+    type: String  // 📡 For real-time features
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive'],
+    default: 'active'
+  },
+  vehicle: {
+    type: {
+      type: String,
+      enum: ['car', 'bike', 'rickshaw'],
+      required: true
+    },
+    make: { type: String, required: true },
+    model: { type: String, required: true },
+    year: { type: Number, min: 1990, max: current year },
+    color: { type: String },
+    numberPlate: { 
+      type: String, 
+      required: true, 
+      unique: true, 
+      uppercase: true,
+      match: /^[A-Z]{2,3}-\d{1,4}$/  // Format: LEB-1234
+    },
+    capacity: { type: Number, required: true, min: 1 }
+  },
+  location: {
+    latitude: { type: Number, required: true },
+    longitude: { type: Number, required: true }
+  },
+  // Account verification fields
+  isAccountVerified: {
+    type: Boolean,
+    default: false
+  },
+  verifyOtp: {
+    type: String,
+    default: ''
+  },
+  verifyOtpExpiry: {
+    type: Number,
+    default: 0
+  },
+  // Password reset fields
+  forgotPasswordOtp: {
+    type: String,
+    default: ''
+  },
+  forgotPasswordOtpExpiry: {
+    type: Number,
+    default: 0
+  }
+}
+```
+
+---
+
+## 🔧 Project Structure
+
+<div align="center">
+
+### 📁 Backend Architecture
+
+```
+sawaridotpk-v2/
+├── 📁 backend/
+│   ├── 📁 config/
+│   │   └── 🔗 connectDB.js              # MongoDB connection
+│   ├── 📁 controllers/
+│   │   ├── 🎮 passenger.controller.js   # Passenger API logic
+│   │   └── 🎮 captain.controller.js     # Captain API logic
+│   ├── 📁 middleware/
+│   │   └── 🛡️ auth.middleware.js        # JWT authentication
+│   ├── 📁 models/
+│   │   ├── 📊 passenger.model.js        # Passenger schema
+│   │   └── 📊 captain.model.js          # Captain schema
+│   ├── 📁 routes/
+│   │   ├── 🛣️ passenger.route.js        # Passenger endpoints
+│   │   └── 🛣️ captain.route.js          # Captain endpoints
+│   ├── 📁 services/
+│   │   └── 📧 email.service.js          # Email service
+│   ├── 🚀 app.js                        # Express server
+│   ├── 📦 package.json                  # Dependencies
+│   └── 📦 package-lock.json             # Lock file
+├── 📄 readme.md                         # Documentation
+└── 📄 .gitignore                        # Git ignore
+```
+
+</div>
+
+### 🏗️ Architecture Overview
+
+<div align="center">
+
+| **Layer** | **Directory** | **Purpose** | **Files** |
+|-----------|---------------|-------------|-----------|
+| **🛣️ Routes** | `routes/` | API endpoint definitions | `passenger.route.js`, `captain.route.js` |
+| **🎮 Controllers** | `controllers/` | Business logic & request handling | `passenger.controller.js`, `captain.controller.js` |
+| **📊 Models** | `models/` | Database schemas & validation | `passenger.model.js`, `captain.model.js` |
+| **🛡️ Middleware** | `middleware/` | Authentication & validation | `auth.middleware.js` |
+| **⚙️ Config** | `config/` | Database & environment setup | `connectDB.js` |
+
+</div>
+
+### 📋 File Status
+
+<div align="center">
+
+| **File** | **Type** | **Status** | **Description** |
+|----------|----------|------------|-----------------|
+| `app.js` | Server | ✅ Ready | Express app configuration |
+| `connectDB.js` | Database | ✅ Ready | MongoDB connection setup |
+| `auth.middleware.js` | Security | ✅ Ready | JWT authentication |
+| `upload.middleware.js` | Upload | ✅ Ready | File upload handling with Multer |
+| `passenger.controller.js` | API | ✅ Ready | Passenger CRUD operations + Profile Pictures |
+| `captain.controller.js` | API | ✅ Ready | Captain CRUD operations + Profile Pictures |
+| `passenger.model.js` | Schema | ✅ Ready | Passenger data model with profilePic field |
+| `captain.model.js` | Schema | ✅ Ready | Captain data model with profilePic field |
+| `passenger.route.js` | Routes | ✅ Ready | Passenger API endpoints + Profile Picture routes |
+| `captain.route.js` | Routes | ✅ Ready | Captain API endpoints + Profile Picture routes |
+| `email.service.js` | Service | ✅ Ready | Email sending functionality |
+| `uploads/profile-pictures/` | Storage | ✅ Auto-created | Profile picture file storage directory |
+
+</div>
+
+</div>
+
+---
+
+## 🛡️ Security Features
+
+<div align="center">
+
+| Feature | Description | Status |
+|---------|-------------|--------|
+| 🔐 **Password Hashing** | bcrypt with salt rounds | ✅ Implemented |
+| 🔑 **JWT Authentication** | Secure token-based auth | ✅ Implemented |
+| 🍪 **HTTP-only Cookies** | XSS protection | ✅ Implemented |
+| 🌐 **CORS Configuration** | Cross-origin security | ✅ Implemented |
+| ✅ **Input Validation** | Comprehensive field validation | ✅ Implemented |
+| 🔐 **OTP Authentication** | Email-based OTP verification | ✅ Implemented |
+| 📧 **Email Service** | Nodemailer integration | ✅ Implemented |
+| 🚗 **Captain Email Features** | Captain-specific welcome, verification & reset emails | ✅ Implemented |
+| 🔄 **Cross-Model Email Validation** | Email uniqueness across passenger & captain models | ✅ Implemented |
+| 🖼️ **Profile Picture Security** | File type validation, size limits, secure storage | ✅ Implemented |
+| 🛡️ **Error Handling** | Secure error responses | ✅ Implemented |
+
+</div>
+
+### 🌟 **Enhanced Email Template System**
+
+#### 📧 **Passenger Email Templates**
+- **🎨 Premium Design**: Glassmorphism effects with ambient gradient orbs
+- **📱 Mobile-First**: Responsive HTML with table-based layouts
+- **🔐 Security-Focused**: Enhanced password reset with security notices
+- **🎯 Professional Branding**: Google Fonts (Inter, Poppins) and brand colors
+- **✨ Modern Aesthetics**: Dark theme with high-contrast CTAs
+
+#### 🚗 **Captain Email Templates**  
+- **🚖 Driver-Focused Messaging**: All emails tailored for driver partners
+- **💼 Professional Tone**: Business-oriented communication style
+- **🔐 Secure Verification**: OTP-based account verification system
+- **📱 Mobile-Optimized**: Responsive email templates for all devices
+- **🎨 Consistent Branding**: Sawari.pk design system throughout
+- **🚗 Vehicle Integration**: Welcome emails include vehicle information
+
+#### 🎯 **Template Features**
+- **🌈 Brand Gradients**: Four-color gradient system matching UI
+- **🔒 Security Elements**: Enhanced security notices and warnings
+- **📊 Professional Layout**: Clean, structured email composition
+- **⚡ Fast Loading**: Optimized images and efficient CSS
+- **🎨 Visual Hierarchy**: Clear typography and spacing system
+
+### 🔄 **Cross-Model Email Validation System**
+
+#### 🎯 **Email Uniqueness Enforcement**
+- **📵 Global Email Validation**: Prevents same email from being used for both passenger and captain accounts
+- **👥 Account Type Detection**: Smart error messages guide users to correct login/registration
+- **🔐 Registration Protection**: Cross-model validation during account creation
+- **🔑 Login Intelligence**: Helpful guidance when users attempt wrong account type login
+- **🔄 Password Reset Safety**: Cross-model validation for password reset requests
+
+#### 🚀 **Implementation Features**
+<div align="center">
+
+| Validation Point | Passenger → Captain | Captain → Passenger | Status |
+|------------------|----------------------|---------------------|--------|
+| **Registration** | Checks captain model | Checks passenger model | ✅ Active |
+| **Login Attempt** | Guides to captain login | Guides to passenger login | ✅ Active |
+| **Password Reset** | Directs to captain reset | Directs to passenger reset | ✅ Active |
+| **Error Messages** | Specific, helpful guidance | Specific, helpful guidance | ✅ Active |
+
+</div>
+
+#### 💬 **Smart Error Messages**
+- **Registration**: "This email is already been used. Please use a different email address."
+- **Login**: "This email is registered as a [account-type] account. Please use the [correct-type] login..."
+- **Password Reset**: "This email is registered as a [account-type] account. Please use the [correct-type] password reset..."
+
+#### 🔒 **Security Benefits**
+- **📊 Data Integrity**: Ensures email uniqueness across the entire system
+- **🛡️ Account Protection**: Prevents accidental account conflicts
+- **🎯 Clear Separation**: Maintains distinct passenger and captain identities
+- **📝 User Experience**: Clear, helpful error messages prevent confusion
+
+---
+
+## 🗄️ Database Schema
+
+### 📊 Passenger Model
+
+```javascript
+{
+  firstname: {
+    type: String,
+    required: true,
+    minlength: 3
+  },
+  lastname: {
+    type: String,
+    required: true,
+    minlength: 3
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    validate: email format
+  },
+  profilePic: {
+    type: String,
+    default: null,
+    validate: JPG/JPEG/PNG format  // 🖼️ Profile picture path
+  },
+  password: {
+    type: String,
+    required: true,
+    select: false  // 🔒 Hidden from queries by default
+  },
+  socketId: {
+    type: String  // 📡 For real-time features
+  },
+  // Account verification fields
+  isAccountVerified: {
+    type: Boolean,
+    default: false
+  },
+  verifyOtp: {
+    type: String,
+    default: ''
+  },
+  verifyOtpExpiry: {
+    type: Number,
+    default: 0
+  },
+  // Password reset fields
+  forgotPasswordOtp: {
+    type: String,
+    default: ''
+  },
+  forgotPasswordOtpExpiry: {
+    type: Number,
+    default: 0
+  }
+}
+```
+
+### 🚗 Captain Model
+
+```javascript
+{
+  firstname: {
+    type: String,
+    required: true,
+    minlength: 3
+  },
+  lastname: {
+    type: String,
+    required: true,
+    minlength: 3
+  },
+  email: {
+    type: String,
+    required: true,
+    unique: true,
+    lowercase: true,
+    validate: email format
+  },
+  profilePic: {
+    type: String,
+    default: null,
+    validate: JPG/JPEG/PNG format  // 🖼️ Profile picture path
   },
   password: {
     type: String,

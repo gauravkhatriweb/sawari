@@ -7,6 +7,7 @@ import PassengerLogin from './pages/passengerPages/PassengerLogin'
 import PassengerRegister from './pages/passengerPages/PassengerRegister'
 import PassengerVerifyOtp from './pages/passengerPages/PassengerVerifyOtp'
 import PassengerProfile from './pages/passengerPages/PassengerProfile'
+import PassengerHome from './pages/passengerPages/PassengerHome'
 import PassengerForgotPassword from './pages/passengerPages/PassengerForgotPassword'
 import PassengerResetPassword from './pages/passengerPages/PassengerResetPassword'
 import CaptainLogin from './pages/captainPages/CaptainLogin'
@@ -20,6 +21,7 @@ import ContactPage from './pages/legalPages/ContactPage'
 import FAQPage from './pages/legalPages/FAQPage'
 import NotFound from './pages/errorPages/NotFound'
 import CaptainHome from './pages/captainPages/CaptainHome'
+import CaptainProfile from './pages/captainPages/CaptainProfile'
 
 const App = () => {
   return (
@@ -32,6 +34,7 @@ const App = () => {
         <Route path="/passenger/register" element={<PassengerRegister />} />
         <Route path="/passenger/verify-otp" element={<PassengerVerifyOtp />} />
         <Route path="/passenger/profile" element={<PassengerProfile />} />
+        <Route path="/passenger/home" element={<PassengerHome />} />
         <Route path="/passenger/forgot-password" element={<PassengerForgotPassword />} />
         <Route path="/passenger/reset-password" element={<PassengerResetPassword />} />
         <Route path="/captain/login" element={<CaptainLogin />} />
@@ -45,6 +48,7 @@ const App = () => {
         <Route path="/legal/faq" element={<FAQPage />} />
         <Route path="*" element={<NotFound />} />
         <Route path="/captain/home" element={<CaptainHome />} />
+        <Route path="/captain/profile" element={<CaptainProfile />} />
       </Routes>
     </div>
   )

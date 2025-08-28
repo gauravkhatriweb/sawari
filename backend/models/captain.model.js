@@ -26,6 +26,19 @@ const captainSchema = new mongoose.Schema({
             message: 'Invalid email address',
         },
     },
+    profilePic: {
+        type: String,
+        default: null,
+        validate: {
+            validator: function(value) {
+                if (!value) return true; // Allow null/empty values
+                // Check file extension for valid image types
+                const validExtensions = /\.(jpg|jpeg|png)$/i;
+                return validExtensions.test(value);
+            },
+            message: 'Profile picture must be a valid image file (jpg, jpeg, png)'
+        }
+    },
     password: {
         type: String,
         required: true,

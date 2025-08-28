@@ -42,6 +42,9 @@ app.use(express.json({ limit: "16kb" }));
 app.use(express.urlencoded({ extended: true, limit: "16kb" }));
 app.use(cookieParser());
 
+// Serve static files (profile pictures)
+app.use('/uploads', express.static('uploads'));
+
 // Security headers for production
 if (NODE_ENV === 'production') {
     app.use((req, res, next) => {

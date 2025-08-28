@@ -8,6 +8,9 @@ import {
     getCaptainResetPasswordEmailHTML,
 } from "../templates/captainEmail.template.js";
 import bcrypt from 'bcrypt';
+import path from 'path';
+import fs from 'fs';
+import { deleteOldProfilePic } from '../middleware/upload.middleware.js';
 
 
 
@@ -601,6 +604,178 @@ export const resetPassword = async (req, res) => {
         return res.status(500).json({
             success: false,
             message: 'Internal server error while resetting password'
+        });
+    }
+}
+
+/**
+ * Upload profile picture
+ * @route POST /api/captain/upload-profile-pic
+ * @protected
+ */
+export const uploadProfilePicture = async (req, res) => {
+    try {
+        // Check if file was uploaded
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded. Please select an image file.'
+            });
+        }
+
+        // Get captain ID from auth middleware
+        const captainId = req.captain._id;
+
+        // Find captain and get current profile picture
+        const captain = await CaptainModel.findById(captainId);
+        if (!captain) {
+            // Delete uploaded file if captain not found
+            if (req.file && req.file.filename) {
+                deleteOldProfilePic(req.file.filename);
+            }
+            return res.status(404).json({
+                success: false,
+                message: 'Captain not found'
+            });
+        }
+
+        // Delete old profile picture if exists
+        if (captain.profilePic) {
+            const oldFileName = path.basename(captain.profilePic);
+            deleteOldProfilePic(oldFileName);
+        }
+
+        // Update captain with new profile picture path
+        const profilePicPath = `/uploads/profile-pictures/${req.file.filename}`;
+        captain.profilePic = profilePicPath;
+        await captain.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Profile picture uploaded successfully',
+            profilePic: profilePicPath
+        });
+    } catch (error) {
+        console.error('Upload Profile Picture Error:', error);
+        
+        // Delete uploaded file in case of error
+        if (req.file && req.file.filename) {
+            deleteOldProfilePic(req.file.filename);
+        }
+        
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error while uploading profile picture'
+        });
+    }
+}
+
+/**
+ * Update profile picture
+ * @route PUT /api/captain/update-profile-pic
+ * @protected
+ */
+export const updateProfilePicture = async (req, res) => {
+    try {
+        // Check if file was uploaded
+        if (!req.file) {
+            return res.status(400).json({
+                success: false,
+                message: 'No file uploaded. Please select an image file.'
+            });
+        }
+
+        // Get captain ID from auth middleware
+        const captainId = req.captain._id;
+
+        // Find captain and get current profile picture
+        const captain = await CaptainModel.findById(captainId);
+        if (!captain) {
+            // Delete uploaded file if captain not found
+            if (req.file && req.file.filename) {
+                deleteOldProfilePic(req.file.filename);
+            }
+            return res.status(404).json({
+                success: false,
+                message: 'Captain not found'
+            });
+        }
+
+        // Delete old profile picture if exists
+        if (captain.profilePic) {
+            const oldFileName = path.basename(captain.profilePic);
+            deleteOldProfilePic(oldFileName);
+        }
+
+        // Update captain with new profile picture path
+        const profilePicPath = `/uploads/profile-pictures/${req.file.filename}`;
+        captain.profilePic = profilePicPath;
+        await captain.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Profile picture updated successfully',
+            profilePic: profilePicPath
+        });
+    } catch (error) {
+        console.error('Update Profile Picture Error:', error);
+        
+        // Delete uploaded file in case of error
+        if (req.file && req.file.filename) {
+            deleteOldProfilePic(req.file.filename);
+        }
+        
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error while updating profile picture'
+        });
+    }
+}
+
+/**
+ * Delete profile picture
+ * @route DELETE /api/captain/delete-profile-pic
+ * @protected
+ */
+export const deleteProfilePicture = async (req, res) => {
+    try {
+        // Get captain ID from auth middleware
+        const captainId = req.captain._id;
+
+        // Find captain
+        const captain = await CaptainModel.findById(captainId);
+        if (!captain) {
+            return res.status(404).json({
+                success: false,
+                message: 'Captain not found'
+            });
+        }
+
+        // Check if captain has a profile picture
+        if (!captain.profilePic) {
+            return res.status(400).json({
+                success: false,
+                message: 'No profile picture to delete'
+            });
+        }
+
+        // Delete profile picture file from server
+        const fileName = path.basename(captain.profilePic);
+        deleteOldProfilePic(fileName);
+
+        // Remove profile picture from database
+        captain.profilePic = null;
+        await captain.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Profile picture deleted successfully'
+        });
+    } catch (error) {
+        console.error('Delete Profile Picture Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error while deleting profile picture'
         });
     }
 }

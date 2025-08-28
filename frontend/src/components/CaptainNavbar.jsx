@@ -14,6 +14,7 @@ const CaptainNavbar = () => {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   const [isActionLoading, setIsActionLoading] = useState(false)
   const [isVerified, setIsVerified] = useState(false)
+  const [profileData, setProfileData] = useState(null) // Store full profile data including profilePic
   const dropdownRef = useRef(null)
   
   const captain = isAuthenticated && user?.type === 'captain' ? user : null
@@ -23,6 +24,7 @@ const CaptainNavbar = () => {
     const checkVerificationStatus = async () => {
       if (!captain || !isAuthenticated) {
         setIsVerified(false)
+        setProfileData(null)
         return
       }
       
@@ -46,12 +48,14 @@ const CaptainNavbar = () => {
           },
         })
         
-        // Check verification status from API response
+        // Check verification status from API response and store profile data
         const verified = Boolean(data?.captain?.isAccountVerified || data?.captain?.isVerified)
         setIsVerified(verified)
+        setProfileData(data?.captain || null) // Store full profile data including profilePic
       } catch (_) {
         // If profile fetch fails, assume not verified
         setIsVerified(false)
+        setProfileData(null)
       }
     }
     
@@ -179,9 +183,22 @@ const CaptainNavbar = () => {
               <>
                 <button 
                   onClick={() => setIsDropdownOpen((o) => !o)} 
-                  className='bg-[#4DA6FF] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4DA6FF]'
+                  className='relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center font-bold text-white shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4DA6FF] border-2 border-white/20 hover:border-white/30 transition-all duration-300'
                 >
-                  {String(captain?.firstname || captain?.firstName || '?').charAt(0).toUpperCase()}
+                  {profileData?.profilePic ? (
+                    <img 
+                      src={`http://localhost:3000${profileData.profilePic}`} 
+                      alt='Profile' 
+                      className='w-full h-full object-cover'
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
+                    {String(captain?.firstname || captain?.firstName || '?').charAt(0).toUpperCase()}
+                  </div>
                 </button>
                 <AnimatePresence>
                   {isDropdownOpen && (
@@ -194,19 +211,45 @@ const CaptainNavbar = () => {
                     >
                       {/* User info header */}
                       <div className='px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#4DA6FF]/10 via-[#EFBFFF]/10 to-[#7CE7E1]/10'>
-                        <p className='text-sm font-semibold' style={{ fontFamily: 'Inter, system-ui' }}>
-                          {captain?.firstname || captain?.firstName || 'Captain'}
-                        </p>
-                        <p className='text-xs text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
-                          {captain?.email || 'captain@example.com'}
-                        </p>
+                        {/* Profile Picture and User Info */}
+                        <div className='flex items-center gap-3 mb-2'>
+                          {/* Profile Picture in Dropdown */}
+                          <div className='relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center font-bold text-white shadow-lg border-2 border-white/20'>
+                            {profileData?.profilePic ? (
+                              <img 
+                                src={`http://localhost:3000${profileData.profilePic}`} 
+                                alt='Profile' 
+                                className='w-full h-full object-cover'
+                                onError={(e) => {
+                                  e.target.style.display = 'none'
+                                  e.target.nextSibling.style.display = 'flex'
+                                }}
+                              />
+                            ) : null}
+                            <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] text-lg ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
+                              {String(captain?.firstname || captain?.firstName || '?').charAt(0).toUpperCase()}
+                            </div>
+                          </div>
+                          
+                          {/* User Details */}
+                          <div className='flex-1'>
+                            <p className='text-sm font-semibold' style={{ fontFamily: 'Inter, system-ui' }}>
+                              {captain?.firstname || captain?.firstName || 'Captain'}
+                            </p>
+                            <p className='text-xs text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
+                              {captain?.email || 'captain@example.com'}
+                            </p>
+                          </div>
+                        </div>
+                        
+                        {/* Verification and Captain Status */}
                         {!isVerified ? (
-                          <div className='mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300'>
+                          <div className='inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300'>
                             <span className='text-xs'>⚠️</span>
                             <span className='text-xs font-medium'>Unverified</span>
                           </div>
                         ) : (
-                          <div className='mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20 text-green-300'>
+                          <div className='inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20 text-green-300'>
                             <span className='text-xs'>🚗</span>
                             <span className='text-xs font-medium'>Captain</span>
                           </div>
@@ -235,6 +278,17 @@ const CaptainNavbar = () => {
                             )}
                           </button>
                         )}
+
+                        <button 
+                          onClick={() => { setIsDropdownOpen(false); navigate('/captain/profile') }} 
+                          className='w-full text-left px-4 py-3 text-sm hover:bg-white/5 transition-colors flex items-center gap-3'
+                          style={{ fontFamily: 'Inter, system-ui' }}
+                        >
+                          <svg className='w-4 h-4 text-[#4DA6FF]' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
+                          </svg>
+                          <span>Profile</span>
+                        </button>
 
                         
                         <button 
@@ -319,8 +373,21 @@ const CaptainNavbar = () => {
             <div className='flex items-center gap-3 pt-2'>
               {captain ? (
                 <div className='relative w-full'>
-                  <button onClick={() => setIsDropdownOpen((o) => !o)} className='bg-[#4DA6FF] text-white w-8 h-8 rounded-full flex items-center justify-center font-bold shadow'>
-                    {String(captain?.firstname || captain?.firstName || '?').charAt(0).toUpperCase()}
+                  <button onClick={() => setIsDropdownOpen((o) => !o)} className='relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center font-bold text-white shadow border-2 border-white/20'>
+                    {profileData?.profilePic ? (
+                      <img 
+                        src={`http://localhost:3000${profileData.profilePic}`} 
+                        alt='Profile' 
+                        className='w-full h-full object-cover'
+                        onError={(e) => {
+                          e.target.style.display = 'none'
+                          e.target.nextSibling.style.display = 'flex'
+                        }}
+                      />
+                    ) : null}
+                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
+                      {String(captain?.firstname || captain?.firstName || '?').charAt(0).toUpperCase()}
+                    </div>
                   </button>
                   <AnimatePresence>
                     {isDropdownOpen && (
@@ -332,19 +399,45 @@ const CaptainNavbar = () => {
                         className='absolute right-0 top-10 w-64 rounded-2xl border border-white/10 bg-[#1A1A1A]/95 backdrop-blur-md text-white shadow-[0_8px_30px_rgba(0,0,0,0.35)] overflow-hidden'
                       >
                           <div className='px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#4DA6FF]/10 via-[#EFBFFF]/10 to-[#7CE7E1]/10'>
-                            <p className='text-sm font-semibold' style={{ fontFamily: 'Inter, system-ui' }}>
-                              {captain?.firstname || captain?.firstName || 'Captain'}
-                            </p>
-                            <p className='text-xs text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
-                              {captain?.email || 'captain@example.com'}
-                            </p>
+                            {/* Profile Picture and User Info */}
+                            <div className='flex items-center gap-3 mb-2'>
+                              {/* Profile Picture in Mobile Dropdown */}
+                              <div className='relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center font-bold text-white shadow-lg border-2 border-white/20'>
+                                {profileData?.profilePic ? (
+                                  <img 
+                                    src={`http://localhost:3000${profileData.profilePic}`} 
+                                    alt='Profile' 
+                                    className='w-full h-full object-cover'
+                                    onError={(e) => {
+                                      e.target.style.display = 'none'
+                                      e.target.nextSibling.style.display = 'flex'
+                                    }}
+                                  />
+                                ) : null}
+                                <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] text-lg ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
+                                  {String(captain?.firstname || captain?.firstName || '?').charAt(0).toUpperCase()}
+                                </div>
+                              </div>
+                              
+                              {/* User Details */}
+                              <div className='flex-1'>
+                                <p className='text-sm font-semibold' style={{ fontFamily: 'Inter, system-ui' }}>
+                                  {captain?.firstname || captain?.firstName || 'Captain'}
+                                </p>
+                                <p className='text-xs text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
+                                  {captain?.email || 'captain@example.com'}
+                                </p>
+                              </div>
+                            </div>
+                            
+                            {/* Verification and Captain Status */}
                             {!isVerified ? (
-                              <div className='mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300'>
+                              <div className='inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300'>
                                 <span className='text-xs'>⚠️</span>
                                 <span className='text-xs font-medium'>Unverified</span>
                               </div>
                             ) : (
-                              <div className='mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20 text-green-300'>
+                              <div className='inline-flex items-center gap-1 px-2 py-1 rounded-full bg-green-500/20 text-green-300'>
                                 <span className='text-xs'>🚗</span>
                                 <span className='text-xs font-medium'>Captain</span>
                               </div>
