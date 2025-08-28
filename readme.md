@@ -501,6 +501,7 @@ const upload = multer({
 | `POST` | `/api/captain/upload-profile-pic` | Upload profile picture | ✅ Yes | ✅ Ready |
 | `PUT` | `/api/captain/update-profile-pic` | Update profile picture | ✅ Yes | ✅ Ready |
 | `DELETE` | `/api/captain/delete-profile-pic` | Delete profile picture | ✅ Yes | ✅ Ready |
+| `PUT` | `/api/captain/update-status` | Update captain online/offline status | ✅ Yes | ✅ Ready |
 
 </div>
 
@@ -1998,6 +1999,71 @@ Code: 200 OK
 
 ---
 
+### 2️⃣5️⃣ Update Captain Status
+
+<div align="center">
+
+**`PUT` `/api/captain/update-status`**
+
+![Auth Required](https://img.shields.io/badge/Auth%20Required-Yes-green?style=for-the-badge)
+
+</div>
+
+#### 🔑 Headers
+
+```
+Authorization: Bearer <jwt-token>
+```
+
+#### 📝 Request Body
+
+| Parameter | Type | Required | Description | Validation |
+|-----------|------|----------|-------------|------------|
+| `status` | String | ✅ Yes | Captain's availability status | 'active' or 'inactive' |
+
+#### 📤 Example Request
+
+```json
+{
+  "status": "active"
+}
+```
+
+#### ✅ Success Response
+
+```
+Code: 200 OK
+```
+
+```json
+{
+  "success": true,
+  "message": "Captain status updated to active",
+  "captain": {
+    "_id": "64f8a1b2c3d4e5f6a7b8c9d0",
+    "status": "active"
+  }
+}
+```
+
+#### ❌ Error Responses
+
+<div align="center">
+
+| Status | Error Type | Response |
+|--------|------------|----------|
+| `400` | Invalid status | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `400` | Status required | ![Bad Request](https://img.shields.io/badge/400-Bad%20Request-red) |
+| `401` | No token | ![Unauthorized](https://img.shields.io/badge/401-Unauthorized-orange) |
+| `404` | Captain not found | ![Not Found](https://img.shields.io/badge/404-Not%20Found-red) |
+| `500` | Internal server error | ![Server Error](https://img.shields.io/badge/500-Server%20Error-red) |
+
+</div>
+
+**💡 Note:** This endpoint updates the captain's availability status for receiving ride requests. Setting status to 'active' makes the captain online and available for rides, while 'inactive' makes them offline. This is used by the frontend toggle button to control the captain's online/offline state.
+
+---
+
 ## 🚖 Captain-Specific Features
 
 <div align="center">
@@ -2284,7 +2350,7 @@ sawaridotpk-v2/
 | `passenger.model.js` | Schema | ✅ Ready | Passenger data model with profilePic field |
 | `captain.model.js` | Schema | ✅ Ready | Captain data model with profilePic field |
 | `passenger.route.js` | Routes | ✅ Ready | Passenger API endpoints + Profile Picture routes |
-| `captain.route.js` | Routes | ✅ Ready | Captain API endpoints + Profile Picture routes |
+| `captain.route.js` | Routes | ✅ Ready | Captain API endpoints + Profile Picture routes + Status Update |
 | `email.service.js` | Service | ✅ Ready | Email sending functionality |
 | `uploads/profile-pictures/` | Storage | ✅ Auto-created | Profile picture file storage directory |
 

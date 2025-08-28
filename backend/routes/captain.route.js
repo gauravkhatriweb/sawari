@@ -1,6 +1,6 @@
 
 import express from 'express';
-import { registerCaptain, loginCaptain, logoutCaptain, getCaptainProfile , sendResetPasswordOtp, resetPassword, sendVerificationOtp, verifyOtp, isAuthenticated, uploadProfilePicture, updateProfilePicture, deleteProfilePicture} from '../controllers/captain.controller.js';
+import { registerCaptain, loginCaptain, logoutCaptain, getCaptainProfile , sendResetPasswordOtp, resetPassword, sendVerificationOtp, verifyOtp, isAuthenticated, uploadProfilePicture, updateProfilePicture, deleteProfilePicture, updateCaptainStatus} from '../controllers/captain.controller.js';
 import { verifyCaptainJWT } from '../middleware/auth.middleware.js';
 import upload, { handleUploadError } from '../middleware/upload.middleware.js';
 
@@ -21,5 +21,8 @@ router.post('/is-authenticated', verifyCaptainJWT, isAuthenticated);
 router.post('/upload-profile-pic', verifyCaptainJWT, upload.single('profilePic'), handleUploadError, uploadProfilePicture);
 router.put('/update-profile-pic', verifyCaptainJWT, upload.single('profilePic'), handleUploadError, updateProfilePicture);
 router.delete('/delete-profile-pic', verifyCaptainJWT, deleteProfilePicture);
+
+// Status update route
+router.put('/update-status', verifyCaptainJWT, updateCaptainStatus);
 
 export default router;

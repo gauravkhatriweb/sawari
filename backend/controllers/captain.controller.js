@@ -780,3 +780,54 @@ export const deleteProfilePicture = async (req, res) => {
     }
 }
 
+/**
+ * Update captain status (active/inactive)
+ * @route PUT /api/captain/update-status
+ * @protected
+ */
+export const updateCaptainStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        
+        // Validate status input
+        if (!status || !['active', 'inactive'].includes(status)) {
+            return res.status(400).json({
+                success: false,
+                message: 'Status is required and must be either "active" or "inactive"'
+            });
+        }
+        
+        // Get captain ID from auth middleware
+        const captainId = req.captain._id;
+        
+        // Find and update captain status
+        const captain = await CaptainModel.findByIdAndUpdate(
+            captainId,
+            { status: status },
+            { new: true, runValidators: true }
+        );
+        
+        if (!captain) {
+            return res.status(404).json({
+                success: false,
+                message: 'Captain not found'
+            });
+        }
+        
+        return res.status(200).json({
+            success: true,
+            message: `Captain status updated to ${status}`,
+            captain: {
+                _id: captain._id,
+                status: captain.status
+            }
+        });
+    } catch (error) {
+        console.error('Update Captain Status Error:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Internal server error while updating captain status'
+        });
+    }
+}
+

@@ -82,16 +82,6 @@ const captainSchema = new mongoose.Schema({
         }
 
       },
-    location: {
-        latitude: {
-        type: Number,
-        required: true
-    },
-        longitude: {
-        type: Number,
-        required: true
-    }
-    },
     // Account verification fields
     isAccountVerified: { 
         type: Boolean, 
@@ -114,6 +104,42 @@ const captainSchema = new mongoose.Schema({
     forgotPasswordOtpExpiry: { 
         type: Number, 
         default: 0 
+    },
+
+    // Captain performance metrics
+    rating: {
+        type: Number,
+        default: 5.0,
+        min: [0, 'Rating cannot be less than 0'],
+        max: [5, 'Rating cannot be more than 5'],
+        validate: {
+            validator: function(v) {
+                return Number.isFinite(v) && v >= 0 && v <= 5;
+            },
+            message: 'Rating must be a number between 0 and 5'
+        }
+    },
+    totalRides: {
+        type: Number,
+        default: 0,
+        min: [0, 'Total rides cannot be negative'],
+        validate: {
+            validator: function(v) {
+                return Number.isInteger(v) && v >= 0;
+            },
+            message: 'Total rides must be a non-negative integer'
+        }
+    },
+    yearsActive: {
+        type: Number,
+        default: 0,
+        min: [0, 'Years active cannot be negative'],
+        validate: {
+            validator: function(v) {
+                return Number.isFinite(v) && v >= 0;
+            },
+            message: 'Years active must be a non-negative number'
+        }
     }
     
 });
