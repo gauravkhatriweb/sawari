@@ -8,7 +8,7 @@ import axios from 'axios'
 
 const PassengerProfile = () => {
   const navigate = useNavigate()
-  const { user, isAuthenticated, logout, updateUserProfile } = useUser()
+  const { user, isAuthenticated, logout, updateUserProfile, isInitialized } = useUser()
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -22,16 +22,20 @@ const PassengerProfile = () => {
 
   // Redirect if not authenticated or not a passenger
   useEffect(() => {
+    // Only check authentication after the context has been initialized
+    if (!isInitialized) return
+    
     if (!isAuthenticated || !user || user.type !== 'passenger') {
       navigate('/passenger/login')
       return
     }
-  }, [isAuthenticated, user, navigate])
+  }, [isAuthenticated, user, navigate, isInitialized])
 
   // Fetch passenger profile from API
   useEffect(() => {
     const fetchProfile = async () => {
-      if (!isAuthenticated || !user || user.type !== 'passenger') return
+      // Wait for auth initialization and ensure user is authenticated passenger
+      if (!isInitialized || !isAuthenticated || !user || user.type !== 'passenger') return
 
       try {
         setLoading(true)
@@ -79,7 +83,7 @@ const PassengerProfile = () => {
     }
 
     fetchProfile()
-  }, [isAuthenticated, user, navigate])
+  }, [isAuthenticated, user, navigate, isInitialized])
 
   // Handle logout
   const handleLogout = async () => {
@@ -615,7 +619,7 @@ const PassengerProfile = () => {
                     
                     {/* Back to Home */}
                     <Link
-                      to='/'
+                      to='/passenger/home'
                       className='inline-flex items-center gap-2 px-4 py-2 bg-[#4DA6FF] text-white rounded-lg hover:bg-[#4DA6FF]/90 transition-colors'
                       style={{ fontFamily: 'Inter, system-ui' }}
                     >

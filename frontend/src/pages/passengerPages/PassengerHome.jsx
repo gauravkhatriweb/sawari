@@ -1,1150 +1,1337 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { toast } from 'react-toastify'
 import { useUser } from '../../context/UserContext'
+import Navbar from '../../components/Navbar'
+import LiveMap from '../../components/LiveMap'
+import EnhancedSearchBar from '../../components/EnhancedSearchBar'
+import useCurrentLocation from '../../customHooks/useCurrentLocation'
+import useUserLocationFetcher from '../../customHooks/UserLocationFetcher'
+import { useReverseGeocode } from '../../customHooks/useReverseGeocode'
+import axios from 'axios'
+
+// Enhanced Design System Tokens
+const designTokens = {
+  colors: {
+    primary: '#4DA6FF',
+    secondary: '#EFBFFF', 
+    accent: '#FFD65C',
+    success: '#10B981',
+    warning: '#F59E0B',
+    error: '#EF4444',
+    textPrimary: '#0A0A0A',
+    textSecondary: '#374151',
+    textInverse: '#FFFFFF',
+    surface: 'rgba(255, 255, 255, 0.95)',
+    surfaceElevated: 'rgba(255, 255, 255, 0.98)',
+    overlay: 'rgba(0, 0, 0, 0.4)'
+  },
+  shadows: {
+    sm: '0 2px 8px rgba(0, 0, 0, 0.08)',
+    md: '0 8px 24px rgba(0, 0, 0, 0.12)',
+    lg: '0 16px 32px rgba(0, 0, 0, 0.16)',
+    xl: '0 24px 48px rgba(0, 0, 0, 0.20)'
+  },
+  radius: {
+    sm: '8px',
+    md: '12px',
+    lg: '16px',
+    xl: '24px',
+    full: '9999px'
+  },
+  spacing: {
+    xs: '4px',
+    sm: '8px',
+    md: '16px',
+    lg: '24px',
+    xl: '32px',
+    '2xl': '48px'
+  }
+}
+
+// Enhanced animation variants
+const animations = {
+  spring: { type: 'spring', damping: 25, stiffness: 200 },
+  easeOut: { duration: 0.3, ease: [0.2, 0.8, 0.2, 1] },
+  easeIn: { duration: 0.2, ease: [0.4, 0, 0.6, 1] },
+  bounce: { type: 'spring', damping: 15, stiffness: 300 }
+}
 
 const PassengerHome = () => {
   const navigate = useNavigate()
-  const { user, isAuthenticated, logout } = useUser()
-  const [currentLocation, setCurrentLocation] = useState('Getting location...')
-  const [locationDropdownOpen, setLocationDropdownOpen] = useState(false)
-  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false)
-  const [notificationsOpen, setNotificationsOpen] = useState(false)
-  const [notificationCount, setNotificationCount] = useState(3) // Mock notification count
+  const { user, isAuthenticated, logout, isInitialized } = useUser()
+  
+  // Authentication and profile states
   const [profile, setProfile] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [profileError, setProfileError] = useState(null)
   
-  // Search & Destination states
-  const [destination, setDestination] = useState('')
-  const [destinationError, setDestinationError] = useState('')
-  const [showDestinationDropdown, setShowDestinationDropdown] = useState(false)
-  const [isDestinationFocused, setIsDestinationFocused] = useState(false)
+  // Enhanced location and map states with proper wiring
+  const { coords, loading: locationLoading, error: locationError, getCurrentPosition, retry: retryLocation, permission } = useCurrentLocation()
+  const locationFetcher = useUserLocationFetcher()
+  const { address: reverseGeocodedAddress, loading: geocodeLoading, error: geocodeError } = useReverseGeocode(coords, true)
   
-  // Ride selection states
+  const [pickupLocation, setPickupLocation] = useState(null)
+  const [pickupAddress, setPickupAddress] = useState('')
+  const [isPickupConfirmed, setIsPickupConfirmed] = useState(false)
+  const [destinationLocation, setDestinationLocation] = useState(null)
+  const [destinationAddress, setDestinationAddress] = useState('')
+  const [mapKey, setMapKey] = useState(0)
+  const [showLocationError, setShowLocationError] = useState(false)
+  const [manualPickupEntry, setManualPickupEntry] = useState(false)
+  const [isPickupInputFocused, setIsPickupInputFocused] = useState(false)
+  const [isDestinationInputFocused, setIsDestinationInputFocused] = useState(false)
+  
+  // Enhanced UI states
+  const [bottomSheetHeight, setBottomSheetHeight] = useState('collapsed') // 'collapsed', 'half', 'full'
+  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false)
+  const [isDraggingPin, setIsDraggingPin] = useState(false)
+  
+  // UI states
+  const [showRideOptions, setShowRideOptions] = useState(false)
   const [selectedRideType, setSelectedRideType] = useState(null)
+  const [showProfileMenu, setShowProfileMenu] = useState(false)
+  const [showSafetyToolkit, setShowSafetyToolkit] = useState(false)
+  const [showPaymentSelector, setShowPaymentSelector] = useState(false)
+  const [showNotifications, setShowNotifications] = useState(false)
+  const [notificationCount, setNotificationCount] = useState(3)
+  const [promoBannerDismissed, setPromoBannerDismissed] = useState(false)
   
-  // Promotional banner states
-  const [currentPromoIndex, setCurrentPromoIndex] = useState(0)
+  // Ride booking states
+  const [isBookingRide, setIsBookingRide] = useState(false)
+  const [currentPaymentMethod, setCurrentPaymentMethod] = useState('cash')
   
-  // Bottom navigation states
-  const [activeTab, setActiveTab] = useState('home')
-
-
-
-  // Mock getting current location
-  useEffect(() => {
-    // Simulate location detection
-    const timer = setTimeout(() => {
-      setCurrentLocation('📍 Current Location')
-      setLoading(false)
-    }, 1500)
-    return () => clearTimeout(timer)
-  }, [])
-
-  // Promotional banner rotation
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setCurrentPromoIndex(prev => (prev + 1) % promotionalBanners.length)
-    }, 4000) // Change banner every 4 seconds
-    return () => clearInterval(interval)
-  }, [])
-
-  // Mock profile data from user context
-  useEffect(() => {
-    if (user && user.type === 'passenger') {
-      setProfile({
-        firstname: user.firstname || user.firstName || 'User',
-        email: user.email || 'user@example.com',
-        isVerified: user.isAccountVerified || user.isVerified || false
-      })
-    }
-  }, [user])
-
-  // Mock notifications data
-  const notifications = [
-    {
-      id: 1,
-      title: 'Driver on the way',
-      message: 'Your driver will arrive in 5 minutes',
-      time: '2 min ago',
-      type: 'ride',
-      icon: '🚗'
-    },
-    {
-      id: 2,
-      title: 'Special Offer',
-      message: '20% off your next 3 rides',
-      time: '1 hour ago',
-      type: 'offer',
-      icon: '🎉'
-    },
-    {
-      id: 3,
-      title: 'Trip completed',
-      message: 'Rate your recent trip experience',
-      time: '3 hours ago',
-      type: 'trip',
-      icon: '⭐'
-    }
-  ]
-
-  // Mock recent destinations and saved places
-  const savedPlaces = [
-    { id: 1, name: 'Home', address: 'Model Town, Lahore', icon: '🏠', type: 'saved' },
-    { id: 2, name: 'Work', address: 'DHA Phase 5, Lahore', icon: '🏢', type: 'saved' },
-    { id: 3, name: 'Gym', address: 'Gulberg III, Lahore', icon: '💪', type: 'saved' },
-  ]
+  // Mock data states
+  const [savedPlaces, setSavedPlaces] = useState([
+    { id: 1, name: 'Home', address: 'DHA Phase 5, Lahore', type: 'home', icon: '🏠' },
+    { id: 2, name: 'Work', address: 'Packages Mall, Lahore', type: 'work', icon: '🏢' },
+    { id: 3, name: 'Gym', address: 'Fitness First, Gulberg', type: 'favorite', icon: '💪' }
+  ])
   
-  const recentDestinations = [
-    { id: 4, name: 'Emporium Mall', address: 'Johar Town, Lahore', icon: '🛍️', type: 'recent' },
-    { id: 5, name: 'Liberty Market', address: 'Gulberg III, Lahore', icon: '🛒', type: 'recent' },
-    { id: 6, name: 'Fortress Stadium', address: 'Cantt, Lahore', icon: '🏟️', type: 'recent' },
-    { id: 7, name: 'Packages Mall', address: 'Walton Road, Lahore', icon: '🏪', type: 'recent' },
-  ]
-
-  // Promotional banners data
-  const promotionalBanners = [
+  // Ride options with pricing
+  const rideOptions = [
     {
-      id: 1,
-      title: '20% off first 3 rides 🎉',
-      description: 'New user special offer',
-      gradient: 'linear-gradient(135deg, #4DA6FF 0%, #EFBFFF 100%)',
-      icon: '🎉'
-    },
-    {
-      id: 2,
-      title: 'Free delivery on orders 📦',
-      description: 'Limited time offer',
-      gradient: 'linear-gradient(135deg, #7CE7E1 0%, #FFD65C 100%)',
-      icon: '📦'
-    },
-    {
-      id: 3,
-      title: 'Premium rides at standard rates 🚙',
-      description: 'Weekend special',
-      gradient: 'linear-gradient(135deg, #EFBFFF 0%, #4DA6FF 100%)',
-      icon: '🚙'
-    }
-  ]
-
-  // Ride types configuration
-  const rideTypes = [
-    {
-      id: 'standard',
-      name: 'Standard Ride',
+      id: 'economy',
+      name: 'Economy',
       icon: '🚗',
-      description: 'Budget-friendly option for daily commutes',
-      eta: '5-8 min',
-      price: 'PKR 150',
-      rating: '4.8',
-      gradient: 'linear-gradient(135deg, #4DA6FF 0%, #EFBFFF 50%, #FFD65C 100%)'
+      description: 'Affordable rides',
+      eta: '3-5 min',
+      basePrice: 150,
+      pricePerKm: 25,
+      color: '#4DA6FF'
     },
     {
-      id: 'premium',
-      name: 'Premium Ride',
+      id: 'comfort',
+      name: 'Comfort',
       icon: '🚙',
-      description: 'SUV & luxury vehicles for comfort',
-      eta: '6-10 min',
-      price: 'PKR 280',
-      rating: '4.9',
-      gradient: 'linear-gradient(135deg, #EFBFFF 0%, #7CE7E1 50%, #4DA6FF 100%)'
+      description: 'Premium vehicles',
+      eta: '4-6 min',
+      basePrice: 200,
+      pricePerKm: 35,
+      color: '#EFBFFF'
+    },
+    {
+      id: 'xl',
+      name: 'XL',
+      icon: '🚐',
+      description: 'Extra space, 6 seats',
+      eta: '5-8 min',
+      basePrice: 300,
+      pricePerKm: 45,
+      color: '#7CE7E1'
     },
     {
       id: 'bike',
-      name: 'Bike Ride',
-      icon: '🛵',
-      description: 'Cheap & fast for quick trips',
-      eta: '3-5 min',
-      price: 'PKR 80',
-      rating: '4.7',
-      gradient: 'linear-gradient(135deg, #7CE7E1 0%, #FFD65C 50%, #4DA6FF 100%)'
-    },
-    {
-      id: 'delivery',
-      name: 'Delivery',
-      icon: '📦',
-      description: 'Send parcels & documents safely',
-      eta: '15-30 min',
-      price: 'PKR 120',
-      rating: '4.6',
-      gradient: 'linear-gradient(135deg, #FFD65C 0%, #4DA6FF 50%, #EFBFFF 100%)'
+      name: 'Bike',
+      icon: '🏍️',
+      description: 'Quick & economical',
+      eta: '2-4 min',
+      basePrice: 80,
+      pricePerKm: 15,
+      color: '#FFD65C'
     }
   ]
-
-  // Bottom navigation configuration
-  const bottomNavTabs = [
+  
+  // Payment methods
+  const paymentMethods = [
+    { id: 'cash', name: 'Cash', icon: '💵', description: 'Pay with cash' },
+    { id: 'card', name: 'Credit Card', icon: '💳', description: '**** **** **** 1234' },
+    { id: 'wallet', name: 'Sawari Wallet', icon: '💰', description: 'PKR 1,250 available' }
+  ]
+  
+  // Mock notifications
+  const notifications = [
     {
-      id: 'home',
-      name: 'Home',
-      icon: '🏠',
-      path: '/passenger/home'
+      id: 1,
+      title: 'Welcome bonus!',
+      message: 'Get 20% off your next 3 rides',
+      time: '2 hours ago',
+      type: 'promotion',
+      icon: '🎉'
     },
     {
-      id: 'trips',
-      name: 'Trips',
-      icon: '📜',
-      path: '/passenger/trips'
+      id: 2,
+      title: 'Rate your last ride',
+      message: 'How was your trip with Captain Ahmed?',
+      time: '1 day ago',
+      type: 'feedback',
+      icon: '⭐'
     },
     {
-      id: 'wallet',
-      name: 'Wallet',
-      icon: '💳',
-      path: '/passenger/wallet'
-    },
-    {
-      id: 'profile',
-      name: 'Profile',
-      icon: '👤',
-      path: '/passenger/profile'
+      id: 3,
+      title: 'Safety update',
+      message: 'New safety features now available',
+      time: '2 days ago',
+      type: 'safety',
+      icon: '🛡️'
     }
   ]
-
-  // Validation functions
-  const validateDestination = (value) => {
-    setDestinationError('')
+  
+  // Redirect if not authenticated or not a passenger
+  useEffect(() => {
+    if (!isInitialized) return
     
-    if (!value.trim()) {
-      setDestinationError('Please enter destination')
-      return false
-    }
-    
-    // Check for invalid characters (allow letters, numbers, spaces, common punctuation)
-    const invalidChars = /[^a-zA-Z0-9\s\-.,#()]/
-    if (invalidChars.test(value)) {
-      setDestinationError('Invalid characters in destination')
-      return false
-    }
-    
-    if (value.trim().length < 2) {
-      setDestinationError('Destination must be at least 2 characters')
-      return false
-    }
-    
-    return true
-  }
-
-  const handleDestinationChange = (e) => {
-    const value = e.target.value
-    setDestination(value)
-    
-    // Show dropdown when typing
-    if (value.length > 0) {
-      setShowDestinationDropdown(true)
-    } else {
-      setShowDestinationDropdown(false)
-    }
-    
-    // Clear error when user starts typing
-    if (destinationError) {
-      setDestinationError('')
-    }
-  }
-
-  const handleDestinationBlur = () => {
-    setIsDestinationFocused(false)
-    // Validate on blur
-    if (destination.trim()) {
-      validateDestination(destination)
-    }
-    // Delay hiding dropdown to allow clicks
-    setTimeout(() => {
-      setShowDestinationDropdown(false)
-    }, 200)
-  }
-
-  const handleDestinationFocus = () => {
-    setIsDestinationFocused(true)
-    if (destination.length > 0) {
-      setShowDestinationDropdown(true)
-    }
-  }
-
-  const selectDestination = (place) => {
-    setDestination(place.name)
-    setShowDestinationDropdown(false)
-    setDestinationError('')
-    toast.success(`Destination set to ${place.name}`)
-  }
-
-  const handleSearch = () => {
-    if (validateDestination(destination)) {
-      toast.success(`Searching for rides to ${destination}`)
-      // Here would be the actual search logic
-    }
-  }
-
-  const handleLogout = async () => {
-    try {
-      await logout()
-      toast.success('Logged out successfully')
+    if (!isAuthenticated || !user || user.type !== 'passenger') {
       navigate('/passenger/login')
-    } catch (err) {
-      console.error('Logout error:', err)
-      toast.error('Logout failed')
+      return
     }
-  }
-
-  const handleLocationSelect = (location) => {
-    setCurrentLocation(location.name)
-    setLocationDropdownOpen(false)
-    toast.success(`Location set to ${location.name}`)
-  }
-
-  const markNotificationAsRead = (notificationId) => {
-    setNotificationCount(prev => Math.max(0, prev - 1))
-  }
-
-  // Ride selection handler
-  const handleRideSelection = (rideType) => {
-    setSelectedRideType(rideType)
-    toast.success(`${rideType.name} selected`)
-  }
-
-  // CTA validation and handler
-  const handleConfirmRide = () => {
-    // Validate destination
-    if (!destination.trim()) {
-      toast.error('Please enter destination')
+  }, [isAuthenticated, user, navigate, isInitialized])
+  
+  // Fetch passenger profile
+  useEffect(() => {
+    const fetchProfile = async () => {
+      if (!isInitialized || !isAuthenticated || !user || user.type !== 'passenger') return
+      
+      try {
+        setLoading(true)
+        setProfileError(null)
+        
+        const raw = localStorage.getItem('sawari_auth') || sessionStorage.getItem('sawari_auth')
+        let token = null
+        if (raw) {
+          try {
+            const parsed = JSON.parse(raw)
+            token = parsed?.token || null
+          } catch (_) {}
+        }
+        
+        const apiBase = (import.meta.env.VITE_API_BASE_URL && String(import.meta.env.VITE_API_BASE_URL).trim().replace(/\/+$/, '')) || 'http://localhost:3000'
+        
+        const { data } = await axios.get(`${apiBase}/api/passengers/profile`, {
+          withCredentials: true,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        })
+        
+        if (data.success && data.passenger) {
+          setProfile(data.passenger)
+        } else {
+          setProfileError('Failed to load profile data')
+        }
+      } catch (err) {
+        console.error('Profile fetch error:', err)
+        const message = err?.response?.data?.message || 'Failed to load profile'
+        setProfileError(message)
+        
+        if (err?.response?.status === 401) {
+          navigate('/passenger/login')
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchProfile()
+  }, [isAuthenticated, user, navigate, isInitialized])
+  
+  // Initialize location on component mount with enhanced error handling
+  useEffect(() => {
+    const initializeLocation = async () => {
+      try {
+        // Check permission state first
+        if (navigator.permissions) {
+          const permissionStatus = await navigator.permissions.query({ name: 'geolocation' })
+          if (permissionStatus.state === 'denied') {
+            setShowLocationError(true)
+            setManualPickupEntry(true)
+            return
+          }
+        }
+        
+        await getCurrentPosition()
+      } catch (error) {
+        console.warn('Failed to get current position:', error)
+        setShowLocationError(true)
+        // Don't immediately show manual entry, give user option to retry
+      }
+    }
+    
+    initializeLocation()
+  }, [])
+  
+  // Enhanced pickup location and address management with proper debouncing
+  useEffect(() => {
+    if (coords && !isPickupConfirmed && !manualPickupEntry && !isPickupInputFocused) {
+      const newPickupLocation = {
+        lat: coords.latitude,
+        lon: coords.longitude,
+        label: reverseGeocodedAddress || 'Current Location',
+        type: 'current'
+      }
+      
+      setPickupLocation(newPickupLocation)
+      setMapKey(prev => prev + 1) // Force map re-render
+    }
+  }, [coords, isPickupConfirmed, manualPickupEntry, isPickupInputFocused, reverseGeocodedAddress])
+  
+  // Enhanced pickup address management with proper state wiring
+  useEffect(() => {
+    // Only auto-fill if user hasn't manually entered anything and input is not focused
+    if (reverseGeocodedAddress && !isPickupConfirmed && !manualPickupEntry && !isPickupInputFocused) {
+      // Only update if current address is empty or was auto-generated
+      if (!pickupAddress || pickupAddress === 'Current Location' || pickupAddress.includes('Unable to fetch')) {
+        setPickupAddress(reverseGeocodedAddress)
+      }
+    } else if (geocodeError && coords && !isPickupConfirmed && !manualPickupEntry && !pickupAddress) {
+      setPickupAddress('Unable to fetch address, please enter manually')
+    }
+  }, [reverseGeocodedAddress, geocodeError, coords, isPickupConfirmed, manualPickupEntry, isPickupInputFocused, pickupAddress])
+  
+  // Enhanced destination selection with better UX
+  const handleDestinationSelect = useCallback((location) => {
+    setDestinationLocation(location)
+    setDestinationAddress(location.label || '')
+    setShowRideOptions(true)
+    setBottomSheetHeight('full')
+    setMapKey(prev => prev + 1)
+    
+    // Haptic feedback
+    if (window.navigator?.vibrate) {
+      window.navigator.vibrate([30, 30, 30])
+    }
+    
+    toast.success('Destination set! Choose your ride \ud83d\ude97', {
+      position: 'bottom-center',
+      autoClose: 2000
+    })
+  }, [])
+  
+  // Enhanced pickup location handling with better UX
+  const handlePickupLocationSelect = useCallback((location) => {
+    setPickupLocation(location)
+    setPickupAddress(location.label || '')
+    setManualPickupEntry(true)
+    setIsPickupConfirmed(false)
+    setMapKey(prev => prev + 1)
+    
+    // Haptic feedback on mobile
+    if (window.navigator?.vibrate) {
+      window.navigator.vibrate(50)
+    }
+  }, [])
+  
+  // Handle pickup address input changes
+  const handlePickupAddressChange = useCallback((address) => {
+    setPickupAddress(address)
+    setManualPickupEntry(true)
+    
+    // If user clears the field, reset to auto-detection
+    if (!address.trim()) {
+      setManualPickupEntry(false)
+      setIsPickupConfirmed(false)
+    }
+  }, [])
+  
+  // Handle destination address input changes
+  const handleDestinationAddressChange = useCallback((address) => {
+    setDestinationAddress(address)
+  }, [])
+  
+  // Enhanced pickup confirmation with better validation
+  const handlePickupConfirmation = useCallback(() => {
+    if (!pickupLocation) {
+      toast.error('Please select a pickup location', {
+        position: 'bottom-center',
+        autoClose: 3000,
+        hideProgressBar: false,
+        closeOnClick: true,
+        pauseOnHover: true,
+        draggable: true
+      })
       return
     }
     
-    // Validate ride type selection
-    if (!selectedRideType) {
-      toast.error('Please select a ride option')
+    if (!pickupAddress || pickupAddress.includes('Unable to fetch')) {
+      toast.error('Please enter a valid pickup address', {
+        position: 'bottom-center',
+        autoClose: 3000
+      })
       return
     }
     
-    // If both validations pass
-    toast.success(`Confirming ${selectedRideType.name} to ${destination}`)
-    // Here would be the actual ride booking logic
+    setIsPickupConfirmed(true)
+    setBottomSheetHeight('half') // Expand bottom sheet for destination input
+    
+    // Haptic feedback
+    if (window.navigator?.vibrate) {
+      window.navigator.vibrate([50, 50, 50])
+    }
+    
+    toast.success('Pickup location confirmed! 📍', {
+      position: 'bottom-center',
+      autoClose: 2000,
+      hideProgressBar: false,
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true
+    })
+  }, [pickupLocation, pickupAddress])
+  
+  // Enhanced location permission retry with better UX
+  const handleLocationRetry = useCallback(async () => {
+    setShowLocationError(false)
+    setManualPickupEntry(false)
+    setIsPickupConfirmed(false)
+    
+    try {
+      await getCurrentPosition()
+      toast.success('Location access enabled! 🎯', {
+        position: 'bottom-center',
+        autoClose: 2000
+      })
+    } catch (error) {
+      setShowLocationError(true)
+      toast.error('Please enable location access or enter manually', {
+        position: 'bottom-center',
+        autoClose: 4000
+      })
+    }
+  }, [getCurrentPosition])
+  
+  // Handle saved place selection
+  const handleSavedPlaceSelect = (place) => {
+    const location = {
+      lat: place.lat || (31.5204 + Math.random() * 0.1),
+      lon: place.lon || (74.3587 + Math.random() * 0.1),
+      label: place.address,
+      type: 'saved'
+    }
+    handleDestinationSelect(location)
   }
-
-  // Check if CTA should be disabled
-  const isCTADisabled = !destination.trim() || !!destinationError
-
-  // Bottom navigation handler
-  const handleBottomNavigation = (tab) => {
-    setActiveTab(tab.id)
-    if (tab.path !== '/passenger/home') {
-      // For other tabs, show coming soon toast for now
-      toast.info(`${tab.name} section coming soon!`)
-      // In a real app, you would navigate: navigate(tab.path)
+  
+  // Handle ride booking
+  const handleBookRide = async () => {
+    if (!selectedRideType || !pickupLocation || !destinationLocation) {
+      toast.error('Please select pickup and destination locations')
+      return
+    }
+    
+    setIsBookingRide(true)
+    
+    try {
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      
+      toast.success('Ride booked successfully! Looking for nearby drivers...')
+      setShowRideOptions(false)
+      setSelectedRideType(null)
+      
+      // In a real app, navigate to ride tracking page
+      setTimeout(() => {
+        toast.info('Driver found! Ahmed is on the way (3 min ETA)')
+      }, 3000)
+      
+    } catch (error) {
+      toast.error('Failed to book ride. Please try again.')
+    } finally {
+      setIsBookingRide(false)
     }
   }
-
-  if (!isAuthenticated || !user || user.type !== 'passenger') {
-    return null
-  }
-
-  return (
-    <div className='min-h-screen bg-[#1A1A1A] text-white overflow-x-hidden'>
-      {/* Top Navigation Header */}
-      <header className='sticky top-0 z-50 bg-[#1A1A1A]/95 backdrop-blur-md border-b border-white/10'>
-        <div className='mx-auto max-w-screen-xl px-4 sm:px-6 py-3 sm:py-4'>
-          <div className='flex items-center justify-between'>
-            
-            {/* Left: Location Selector */}
-            <div className='relative flex-shrink-0'>
-              <button
-                onClick={() => setLocationDropdownOpen(!locationDropdownOpen)}
-                className='flex items-center gap-2 px-3 sm:px-4 py-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors text-xs sm:text-sm'
-                style={{ fontFamily: 'Inter, system-ui' }}
-              >
-                <span className='text-[#4DA6FF]'>📍</span>
-                <span className='font-medium hidden sm:inline'>{currentLocation}</span>
-                <span className='font-medium sm:hidden'>📍</span>
-                <svg className={`w-3 h-3 sm:w-4 sm:h-4 transition-transform ${locationDropdownOpen ? 'rotate-180' : ''}`} fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M19 9l-7 7-7-7' />
-                </svg>
-              </button>
-
-              {/* Location Dropdown */}
-              <AnimatePresence>
-                {locationDropdownOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className='absolute top-12 left-0 w-72 sm:w-80 bg-[#1A1A1A]/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl overflow-hidden'
-                  >
-                    <div className='p-4 border-b border-white/10'>
-                      <h3 className='font-semibold text-white mb-2 text-sm sm:text-base' style={{ fontFamily: 'Inter, system-ui' }}>Select Location</h3>
-                      <div className='relative'>
-                        <input
-                          type='text'
-                          placeholder='Search for a location...'
-                          className='w-full px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent text-sm'
-                          style={{ fontFamily: 'Inter, system-ui' }}
-                        />
-                        <svg className='absolute right-3 top-2.5 w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' />
-                        </svg>
-                      </div>
-                    </div>
-                    <div className='p-2 max-h-64 overflow-y-auto'>
-                      <div className='mb-2'>
-                        <p className='text-xs text-gray-400 px-2 py-1' style={{ fontFamily: 'Inter, system-ui' }}>Recent Locations</p>
-                      </div>
-                      {recentDestinations.slice(0, 4).map((location) => (
-                        <button
-                          key={location.id}
-                          onClick={() => handleLocationSelect(location)}
-                          className='w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-left'
-                        >
-                          <span className='text-lg'>{location.icon}</span>
-                          <div className='flex-1 min-w-0'>
-                            <p className='text-sm font-medium text-white truncate' style={{ fontFamily: 'Inter, system-ui' }}>{location.name}</p>
-                            <p className='text-xs text-gray-400 truncate' style={{ fontFamily: 'Inter, system-ui' }}>{location.address}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Center: Logo/Brand */}
-            <div className='flex items-center gap-2 flex-shrink-0'>
-              <div className='w-6 h-6 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-r from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center'>
-                <span className='text-white font-bold text-xs sm:text-sm'>S</span>
-              </div>
-              <span className='font-bold text-sm sm:text-lg hidden sm:inline' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Sawari</span>
-            </div>
-
-            {/* Right: Notifications & Profile */}
-            <div className='flex items-center gap-2 sm:gap-3 flex-shrink-0'>
-              
-              {/* Notifications Bell */}
-              <div className='relative'>
-                <button
-                  onClick={() => setNotificationsOpen(!notificationsOpen)}
-                  className='relative p-1.5 sm:p-2 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors'
-                >
-                  <svg className='w-4 h-4 sm:w-5 sm:h-5 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9' />
-                  </svg>
-                  {notificationCount > 0 && (
-                    <span className='absolute -top-1 -right-1 w-4 h-4 sm:w-5 sm:h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center'>
-                      {notificationCount > 9 ? '9+' : notificationCount}
-                    </span>
-                  )}
-                </button>
-
-                {/* Notifications Dropdown */}
-                <AnimatePresence>
-                  {notificationsOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                      transition={{ duration: 0.2 }}
-                      className='absolute top-12 right-0 w-72 sm:w-80 bg-[#1A1A1A]/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl overflow-hidden'
-                    >
-                      <div className='p-4 border-b border-white/10'>
-                        <div className='flex items-center justify-between'>
-                          <h3 className='font-semibold text-white text-sm sm:text-base' style={{ fontFamily: 'Inter, system-ui' }}>Notifications</h3>
-                          <button className='text-xs text-[#4DA6FF] hover:text-[#EFBFFF] transition-colors' style={{ fontFamily: 'Inter, system-ui' }}>
-                            Mark all as read
-                          </button>
-                        </div>
-                      </div>
-                      <div className='max-h-64 overflow-y-auto'>
-                        {notifications.map((notification) => (
-                          <div key={notification.id} className='p-3 sm:p-4 border-b border-white/5 hover:bg-white/5 transition-colors'>
-                            <div className='flex items-start gap-3'>
-                              <span className='text-base sm:text-lg flex-shrink-0'>{notification.icon}</span>
-                              <div className='flex-1 min-w-0'>
-                                <div className='flex items-center justify-between mb-1'>
-                                  <p className='text-xs sm:text-sm font-medium text-white truncate' style={{ fontFamily: 'Inter, system-ui' }}>
-                                    {notification.title}
-                                  </p>
-                                  <span className='text-xs text-gray-400 flex-shrink-0 ml-2' style={{ fontFamily: 'Inter, system-ui' }}>
-                                    {notification.time}
-                                  </span>
-                                </div>
-                                <p className='text-xs text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
-                                  {notification.message}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className='p-3 text-center border-t border-white/10'>
-                        <button className='text-xs text-[#4DA6FF] hover:text-[#EFBFFF] transition-colors' style={{ fontFamily: 'Inter, system-ui' }}>
-                          View all notifications
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Profile Icon */}
-              <div className='relative'>
-                <button
-                  onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                  className='w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#4DA6FF] flex items-center justify-center font-bold text-white shadow-lg hover:shadow-xl transition-shadow text-xs sm:text-sm'
-                >
-                  {profile?.firstname?.charAt(0)?.toUpperCase() || 'U'}
-                </button>
-
-                {/* Profile Dropdown */}
-                <AnimatePresence>
-                  {profileDropdownOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                      transition={{ duration: 0.2 }}
-                      className='absolute top-12 right-0 w-56 sm:w-64 bg-[#1A1A1A]/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl overflow-hidden'
-                    >
-                      {/* User info header */}
-                      <div className='px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#4DA6FF]/10 via-[#EFBFFF]/10 to-[#7CE7E1]/10'>
-                        <p className='text-sm font-semibold truncate' style={{ fontFamily: 'Inter, system-ui' }}>
-                          {profile?.firstname || 'User'}
-                        </p>
-                        <p className='text-xs text-gray-300 truncate' style={{ fontFamily: 'Inter, system-ui' }}>
-                          {profile?.email || 'user@example.com'}
-                        </p>
-                        {!profile?.isVerified && (
-                          <div className='mt-1 inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300'>
-                            <span className='text-xs'>⚠️</span>
-                            <span className='text-xs font-medium'>Unverified</span>
-                          </div>
-                        )}
-                      </div>
-                      
-                      {/* Menu items */}
-                      <div className='py-2'>
-                        <Link 
-                          to='/passenger/profile' 
-                          onClick={() => setProfileDropdownOpen(false)}
-                          className='w-full text-left px-4 py-3 text-xs sm:text-sm hover:bg-white/5 transition-colors flex items-center gap-3'
-                          style={{ fontFamily: 'Inter, system-ui' }}
-                        >
-                          <svg className='w-4 h-4 text-[#4DA6FF] flex-shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
-                          </svg>
-                          <span className='truncate'>Account Settings</span>
-                        </Link>
-                        
-                        <button 
-                          className='w-full text-left px-4 py-3 text-xs sm:text-sm hover:bg-white/5 transition-colors flex items-center gap-3'
-                          style={{ fontFamily: 'Inter, system-ui' }}
-                        >
-                          <svg className='w-4 h-4 text-[#4DA6FF] flex-shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' />
-                          </svg>
-                          <span className='truncate'>Payment Methods</span>
-                        </button>
-                        
-                        <button 
-                          className='w-full text-left px-4 py-3 text-xs sm:text-sm hover:bg-white/5 transition-colors flex items-center gap-3'
-                          style={{ fontFamily: 'Inter, system-ui' }}
-                        >
-                          <svg className='w-4 h-4 text-[#4DA6FF] flex-shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
-                          </svg>
-                          <span className='truncate'>Trip History</span>
-                        </button>
-                        
-                        <button 
-                          className='w-full text-left px-4 py-3 text-xs sm:text-sm hover:bg-white/5 transition-colors flex items-center gap-3'
-                          style={{ fontFamily: 'Inter, system-ui' }}
-                        >
-                          <svg className='w-4 h-4 text-[#4DA6FF] flex-shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z' />
-                          </svg>
-                          <span className='truncate'>Help & Support</span>
-                        </button>
-                        
-                        <hr className='my-2 border-white/10' />
-                        
-                        <button 
-                          onClick={handleLogout}
-                          className='w-full text-left px-4 py-3 text-xs sm:text-sm hover:bg-red-500/10 transition-colors flex items-center gap-3 text-red-400'
-                          style={{ fontFamily: 'Inter, system-ui' }}
-                        >
-                          <svg className='w-4 h-4 flex-shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' />
-                          </svg>
-                          <span className='truncate'>Sign Out</span>
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
+  
+  // Show loading state
+  if (loading) {
+    return (
+      <div className='min-h-screen bg-[#1A1A1A] text-white'>
+        <Navbar />
+        <div className='flex items-center justify-center min-h-[calc(100vh-56px)]'>
+          <div className='flex items-center gap-3'>
+            <svg className='w-6 h-6 animate-spin text-[#4DA6FF]' viewBox='0 0 24 24'>
+              <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4'></circle>
+              <path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path>
+            </svg>
+            <span className='text-lg font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Loading...</span>
           </div>
         </div>
-      </header>
-
-      {/* Background gradient orbs */}
-      <div className='pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-[#4DA6FF] via-[#EFBFFF] to-[#FFD65C] blur-3xl opacity-20' />
-      <div className='pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-gradient-to-tr from-[#7CE7E1] via-[#4DA6FF] to-[#EFBFFF] blur-3xl opacity-15' />
-
-      {/* Main Content */}
-      <main className='relative z-10 mx-auto max-w-screen-xl px-4 sm:px-6 py-6 sm:py-8 pb-24 sm:pb-28'>
-        {loading ? (
-          <div className='flex items-center justify-center h-64 sm:h-96'>
-            <div className='flex items-center gap-3'>
-              <svg className='w-6 h-6 animate-spin text-[#4DA6FF]' viewBox='0 0 24 24'>
-                <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4'></circle>
-                <path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path>
+      </div>
+    )
+  }
+  
+  // Show error state
+  if (profileError) {
+    return (
+      <div className='min-h-screen bg-[#1A1A1A] text-white'>
+        <Navbar />
+        <div className='flex items-center justify-center min-h-[calc(100vh-56px)]'>
+          <div className='text-center max-w-md mx-auto px-6'>
+            <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-red-500/20 flex items-center justify-center'>
+              <svg className='w-8 h-8 text-red-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
               </svg>
-              <span className='text-sm sm:text-lg font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Loading your home screen...</span>
+            </div>
+            <h2 className='text-xl font-semibold mb-2' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Unable to Load</h2>
+            <p className='text-gray-300 mb-6' style={{ fontFamily: 'Inter, system-ui' }}>{profileError}</p>
+            <button
+              onClick={() => window.location.reload()}
+              className='px-4 py-2 bg-[#4DA6FF] text-white rounded-lg font-medium hover:bg-[#4DA6FF]/90 transition-colors'
+              style={{ fontFamily: 'Inter, system-ui' }}
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      </div>
+    )
+  }
+  
+  const firstName = profile?.firstname || profile?.firstName || user?.firstname || user?.firstName || 'User'
+  
+  return (
+    <div className='min-h-screen bg-[#1A1A1A] text-white relative overflow-hidden'>
+      <Navbar />
+      
+      {/* Enhanced Background gradient orbs with better positioning */}
+      <div className='pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-gradient-to-br from-[#4DA6FF]/20 via-[#EFBFFF]/15 to-[#FFD65C]/10 blur-3xl' />
+      <div className='pointer-events-none absolute -bottom-32 -right-32 h-[120vh] w-96 rounded-full bg-gradient-to-tr from-[#7CE7E1]/15 via-[#4DA6FF]/20 to-[#EFBFFF]/10 blur-3xl' />
+      <div className='pointer-events-none absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 h-[80vh] w-[80vw] rounded-full bg-gradient-to-r from-[#4DA6FF]/5 to-[#EFBFFF]/5 blur-3xl' />
+      
+      {/* Enhanced Header Section with better spacing and typography */}
+      <div className='relative z-10 px-6 py-6 border-b border-white/10 backdrop-blur-xl bg-white/5'>
+        <div className='max-w-screen-xl mx-auto'>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={animations.easeOut}
+            className='flex items-center justify-between'
+          >
+            {/* Enhanced Greeting and Profile */}
+            <div className='flex items-center gap-6'>
+              <div className='relative'>
+                <div className='w-16 h-16 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center text-2xl font-bold text-white shadow-xl border-2 border-white/40 backdrop-blur-sm'>
+                  {profile?.profilePic ? (
+                    <img 
+                      src={`http://localhost:3000${profile.profilePic}`} 
+                      alt='Profile' 
+                      className='w-full h-full object-cover'
+                      onError={(e) => {
+                        e.target.style.display = 'none'
+                        e.target.nextSibling.style.display = 'flex'
+                      }}
+                    />
+                  ) : null}
+                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] ${profile?.profilePic ? 'hidden' : 'flex'}`}>
+                    {firstName.charAt(0).toUpperCase()}
+                  </div>
+                </div>
+                {/* Online status indicator */}
+                <div className='absolute -bottom-1 -right-1 w-5 h-5 bg-green-500 rounded-full border-2 border-white shadow-lg'></div>
+              </div>
+              
+              <div>
+                <h1 className='text-2xl sm:text-3xl font-bold bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
+                  Hey {firstName}! 👋
+                </h1>
+                <p className='text-lg text-gray-600 mt-1 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>
+                  Where would you like to go today?
+                </p>
+              </div>
+            </div>
+            
+            {/* Enhanced Action Buttons */}
+            <div className='flex items-center gap-4'>
+              {/* Notifications */}
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className='relative w-14 h-14 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-white hover:scale-105 transition-all duration-300 shadow-lg border border-gray-200/50'
+                aria-label='Notifications'
+              >
+                <span className='text-2xl'>🔔</span>
+                {notificationCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={animations.bounce}
+                    className='absolute -top-1 -right-1 w-7 h-7 bg-red-500 rounded-full text-xs flex items-center justify-center text-white font-bold shadow-lg border-2 border-white'
+                  >
+                    {notificationCount}
+                  </motion.span>
+                )}
+              </button>
+              
+              {/* Profile Menu */}
+              <button
+                onClick={() => setShowProfileMenu(!showProfileMenu)}
+                className='w-14 h-14 rounded-full bg-white/90 backdrop-blur-md flex items-center justify-center hover:bg-white hover:scale-105 transition-all duration-300 shadow-lg border border-gray-200/50'
+                aria-label='Menu'
+              >
+                <span className='text-2xl text-gray-700'>☰</span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+      
+      {/* Enhanced Promotional Banner */}
+      {!promoBannerDismissed && (
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ ...animations.easeOut, delay: 0.1 }}
+          className='mx-6 mt-4 relative z-10'
+        >
+          <div className='max-w-screen-xl mx-auto'>
+            <div className='rounded-2xl bg-gradient-to-r from-[#4DA6FF] via-[#EFBFFF] to-[#FFD65C] p-[3px] shadow-xl'>
+              <div className='rounded-2xl bg-white/98 backdrop-blur-xl p-6'>
+                <div className='flex items-center justify-between'>
+                  <div className='flex items-center gap-4 flex-1'>
+                    <span className='text-4xl'>🎉</span>
+                    <div className='flex-1'>
+                      <h3 className='text-lg font-bold text-gray-900 mb-1' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Welcome bonus: 20% off next 3 rides!</h3>
+                      <p className='text-sm text-gray-600' style={{ fontFamily: 'Inter, system-ui' }}>Valid until end of month • No minimum fare required</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => setPromoBannerDismissed(true)}
+                    className='p-3 hover:bg-gray-100 rounded-xl transition-colors text-gray-500 hover:text-gray-700 min-w-[48px] min-h-[48px] flex items-center justify-center'
+                    aria-label='Dismiss banner'
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        ) : (
-          <div className='space-y-6 sm:space-y-8'>
-            {/* Welcome Message */}
+        </motion.div>
+      )}
+      
+      {/* Main Content Area */}
+      <div className='flex-1 relative'>
+        {/* Enhanced Map Container with improved overlay design */}
+        <div className='relative h-[calc(100vh-180px)] min-h-[600px]'>
+          <LiveMap
+            key={mapKey}
+            pickup={pickupLocation}
+            drop={destinationLocation}
+            className='w-full h-full rounded-none'
+          />
+          
+          {/* Enhanced Location Error Overlay */}
+          {(locationError || showLocationError) && !coords && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              transition={animations.easeOut}
+              className='absolute top-6 left-6 right-6 z-[500]'
+            >
+              <div className='bg-white/95 border-2 border-red-200 rounded-2xl p-6 backdrop-blur-xl shadow-xl'>
+                <div className='flex items-center gap-4'>
+                  <div className='w-14 h-14 bg-red-100 rounded-full flex items-center justify-center'>
+                    <span className='text-red-600 text-3xl'>⚠️</span>
+                  </div>
+                  <div className='flex-1'>
+                    <p className='text-lg font-bold text-red-900' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Location access needed</p>
+                    <p className='text-sm text-red-700 mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
+                      {locationError || 'Enable location to detect your pickup automatically'}
+                    </p>
+                  </div>
+                  <button
+                    onClick={handleLocationRetry}
+                    className='px-6 py-3 bg-red-600 text-white rounded-xl text-sm hover:bg-red-700 transition-colors font-semibold min-w-[80px] min-h-[48px] shadow-lg'
+                    style={{ fontFamily: 'Inter, system-ui' }}
+                  >
+                    Retry
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+          
+          {/* Enhanced Geocoding Loading Overlay */}
+          {geocodeLoading && coords && !reverseGeocodedAddress && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={animations.easeOut}
+              className='absolute top-6 left-6 right-6 z-[500]'
+            >
+              <div className='bg-white/95 border-2 border-blue-200 rounded-2xl p-6 backdrop-blur-xl shadow-xl'>
+                <div className='flex items-center gap-4'>
+                  <div className='w-14 h-14 bg-blue-100 rounded-full flex items-center justify-center'>
+                    <svg className='w-7 h-7 animate-spin text-blue-600' viewBox='0 0 24 24'>
+                      <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4'></circle>
+                      <path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path>
+                    </svg>
+                  </div>
+                  <div className='flex-1'>
+                    <span className='text-lg font-bold text-blue-900' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Getting your address...</span>
+                    <p className='text-sm text-blue-700 mt-1' style={{ fontFamily: 'Inter, system-ui' }}>Please wait a moment</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+          
+          {/* Enhanced Safety and Utility Buttons */}
+          <div className='absolute top-6 right-6 flex flex-col gap-3 z-[500]'>
+            {/* Safety Toolkit Button */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setShowSafetyToolkit(true)}
+              className='w-16 h-16 bg-red-600/95 backdrop-blur-md rounded-full flex items-center justify-center text-white hover:bg-red-600 transition-all duration-300 shadow-xl border-2 border-red-500/30'
+              title='Safety Toolkit'
+              aria-label='Safety Toolkit'
+            >
+              <span className='text-2xl'>🛡️</span>
+            </motion.button>
+            
+            {/* Re-center Map Button */}
+            {pickupLocation && (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setMapKey(prev => prev + 1)}
+                className='w-16 h-16 bg-white/95 backdrop-blur-md rounded-full flex items-center justify-center text-gray-700 hover:bg-white hover:text-gray-900 transition-all duration-300 shadow-xl border-2 border-gray-200/50'
+                title='Re-center map'
+                aria-label='Re-center map'
+              >
+                <svg className='w-7 h-7' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2.5' d='M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z' />
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2.5' d='M15 11a3 3 0 11-6 0 3 3 0 016 0z' />
+                </svg>
+              </motion.button>
+            )}
+          </div>
+        </div>
+        
+        {/* Enhanced Search Container with Proper Address Wiring */}
+        <div className='absolute bottom-0 left-0 right-0 z-[600] p-6 pb-8'>
+          <div className='max-w-screen-xl mx-auto space-y-4'>
+            {/* Enhanced Pickup Location Bar with Proper State Management */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
-              className='text-center'
+              transition={{ ...animations.easeOut, delay: 0.2 }}
+              className='w-full'
             >
-              <h1 className='text-2xl sm:text-3xl lg:text-4xl font-bold mb-2' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
-                Welcome back, {profile?.firstname || 'User'}! 👋
-              </h1>
-              <p className='text-sm sm:text-base text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
-                Where would you like to go today?
-              </p>
-            </motion.div>
-
-            {/* Search & Destination Input Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2, duration: 0.6 }}
-              className='rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.35)]'
-            >
-              <div className='space-y-4'>
-                {/* Destination Search */}
-                <div className='relative'>
-                  <label htmlFor='destination' className='block text-sm font-medium mb-2 text-white' style={{ fontFamily: 'Inter, system-ui' }}>
-                    Where are you going?
-                  </label>
-                  <div className='relative'>
-                    <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500'>
-                      <svg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
-                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z' stroke='currentColor'/>
-                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M15 11a3 3 0 11-6 0 3 3 0 016 0z' stroke='currentColor'/>
-                      </svg>
-                    </span>
-                    <input
-                      id='destination'
-                      type='text'
-                      value={destination}
-                      onChange={handleDestinationChange}
-                      onFocus={handleDestinationFocus}
-                      onBlur={handleDestinationBlur}
-                      placeholder='Enter your destination...'
-                      className={`w-full rounded-xl border pl-10 pr-4 py-3 sm:py-4 text-sm sm:text-base placeholder-gray-500 focus:outline-none transition-colors ${
-                        destinationError 
-                          ? 'border-red-500 bg-red-500/10 text-red-300 focus:ring-2 focus:ring-red-500 focus:border-transparent' 
-                          : 'border-white/10 bg-[#111111] text-white focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent'
-                      }`}
-                      style={{ fontFamily: 'Inter, system-ui' }}
-                    />
-                    {destination && (
-                      <button
-                        onClick={() => {
-                          setDestination('')
-                          setDestinationError('')
-                          setShowDestinationDropdown(false)
-                        }}
-                        className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white transition-colors'
-                      >
-                        <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M6 18L18 6M6 6l12 12' />
-                        </svg>
-                      </button>
-                    )}
-                  </div>
-                  
-                  {/* Error Message */}
-                  {destinationError && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className='mt-2 flex items-center gap-2 text-red-400'
-                    >
-                      <svg className='w-4 h-4 flex-shrink-0' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z' />
-                      </svg>
-                      <span className='text-xs sm:text-sm' style={{ fontFamily: 'Inter, system-ui' }}>{destinationError}</span>
-                    </motion.div>
-                  )}
-
-                  {/* Auto-suggest Dropdown */}
-                  <AnimatePresence>
-                    {showDestinationDropdown && (destination.length > 0 || isDestinationFocused) && (
-                      <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className='absolute top-full left-0 right-0 mt-2 bg-[#1A1A1A]/95 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl overflow-hidden z-50'
-                      >
-                        {/* Saved Places */}
-                        {savedPlaces.length > 0 && (
-                          <div className='p-2 border-b border-white/10'>
-                            <p className='text-xs text-gray-400 px-2 py-1 mb-1' style={{ fontFamily: 'Inter, system-ui' }}>Saved Places</p>
-                            {savedPlaces.map((place) => (
-                              <button
-                                key={place.id}
-                                onClick={() => selectDestination(place)}
-                                className='w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-left'
-                              >
-                                <span className='text-lg flex-shrink-0'>{place.icon}</span>
-                                <div className='flex-1 min-w-0'>
-                                  <p className='text-sm font-medium text-white truncate' style={{ fontFamily: 'Inter, system-ui' }}>{place.name}</p>
-                                  <p className='text-xs text-gray-400 truncate' style={{ fontFamily: 'Inter, system-ui' }}>{place.address}</p>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {/* Recent Destinations */}
-                        {recentDestinations.length > 0 && (
-                          <div className='p-2'>
-                            <p className='text-xs text-gray-400 px-2 py-1 mb-1' style={{ fontFamily: 'Inter, system-ui' }}>Recent Destinations</p>
-                            {recentDestinations.filter(place => 
-                              destination === '' || place.name.toLowerCase().includes(destination.toLowerCase()) || place.address.toLowerCase().includes(destination.toLowerCase())
-                            ).slice(0, 4).map((place) => (
-                              <button
-                                key={place.id}
-                                onClick={() => selectDestination(place)}
-                                className='w-full flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/5 transition-colors text-left'
-                              >
-                                <span className='text-lg flex-shrink-0'>{place.icon}</span>
-                                <div className='flex-1 min-w-0'>
-                                  <p className='text-sm font-medium text-white truncate' style={{ fontFamily: 'Inter, system-ui' }}>{place.name}</p>
-                                  <p className='text-xs text-gray-400 truncate' style={{ fontFamily: 'Inter, system-ui' }}>{place.address}</p>
-                                </div>
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                        
-                        {/* No results */}
-                        {destination.length > 0 && savedPlaces.length === 0 && recentDestinations.filter(place => 
-                          place.name.toLowerCase().includes(destination.toLowerCase()) || place.address.toLowerCase().includes(destination.toLowerCase())
-                        ).length === 0 && (
-                          <div className='p-4 text-center'>
-                            <p className='text-sm text-gray-400' style={{ fontFamily: 'Inter, system-ui' }}>No matches found</p>
-                          </div>
-                        )}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-
-                {/* Search Button */}
-                <button
-                  onClick={handleSearch}
-                  disabled={!destination.trim() || !!destinationError}
-                  className={`w-full inline-flex items-center justify-center rounded-xl px-6 py-3 sm:py-4 text-sm sm:text-base font-bold text-white shadow-[0_8px_30px_rgb(0,0,0,0.35)] ring-1 ring-white/10 transition-all duration-200 hover:scale-[1.01] active:scale-[0.99] ${
-                    !destination.trim() || !!destinationError 
-                      ? 'bg-gray-600 opacity-50 cursor-not-allowed' 
-                      : 'bg-[#4DA6FF] hover:brightness-110'
-                  }`}
-                  style={{ fontFamily: 'Inter, system-ui' }}
-                >
-                  <svg className='w-5 h-5 mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z' />
-                  </svg>
-                  Find Rides
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Ride Category Carousel */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3, duration: 0.6 }}
-              className='space-y-4'
-            >
-              <h2 className='text-lg sm:text-xl font-semibold text-white px-2' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
-                Choose Your Ride
-              </h2>
-              
-              {/* Horizontal Scrollable Carousel */}
-              <div className='relative'>
-                <div className='flex gap-4 overflow-x-auto scrollbar-hide pb-2 px-2 snap-x snap-mandatory'>
-                  {rideTypes.map((rideType, index) => (
-                    <motion.div
-                      key={rideType.id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.4 + index * 0.1, duration: 0.5 }}
-                      whileHover={{ scale: 1.02, y: -2 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => handleRideSelection(rideType)}
-                      className={`flex-shrink-0 w-64 sm:w-72 p-4 sm:p-6 rounded-2xl cursor-pointer snap-start transition-all duration-200 ${
-                        selectedRideType?.id === rideType.id 
-                          ? 'ring-2 ring-white ring-offset-2 ring-offset-[#1A1A1A] shadow-lg' 
-                          : ''
-                      }`}
-                      style={{
-                        background: rideType.gradient
-                      }}
-                    >
-                      <div className='bg-black/20 backdrop-blur-sm rounded-xl p-4 h-full'>
-                        <div className='flex items-center justify-between mb-3'>
-                          <div className='w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center'>
-                            <span className='text-2xl sm:text-3xl'>{rideType.icon}</span>
-                          </div>
-                          <div className='text-right'>
-                            <p className='text-xs sm:text-sm text-white/80' style={{ fontFamily: 'Inter, system-ui' }}>ETA</p>
-                            <p className='text-sm sm:text-base font-bold text-white' style={{ fontFamily: 'Inter, system-ui' }}>{rideType.eta}</p>
-                          </div>
-                        </div>
-                        <h3 className='text-lg sm:text-xl font-bold text-white mb-1' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
-                          {rideType.name}
-                        </h3>
-                        <p className='text-xs sm:text-sm text-white/80 mb-3' style={{ fontFamily: 'Inter, system-ui' }}>
-                          {rideType.description}
-                        </p>
-                        <div className='flex items-center justify-between'>
-                          <div className='flex items-center gap-1'>
-                            <span className='text-yellow-300 text-sm'>⭐</span>
-                            <span className='text-xs sm:text-sm text-white/90' style={{ fontFamily: 'Inter, system-ui' }}>{rideType.rating}</span>
-                          </div>
-                          <div className='text-right'>
-                            <p className='text-xs text-white/80' style={{ fontFamily: 'Inter, system-ui' }}>From</p>
-                            <p className='text-lg sm:text-xl font-bold text-white' style={{ fontFamily: 'Inter, system-ui' }}>{rideType.price}</p>
-                          </div>
-                        </div>
-                        
-                        {/* Selection indicator */}
-                        {selectedRideType?.id === rideType.id && (
-                          <motion.div
-                            initial={{ scale: 0 }}
-                            animate={{ scale: 1 }}
-                            className='absolute top-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center'
-                          >
-                            <svg className='w-4 h-4 text-[#4DA6FF]' fill='currentColor' viewBox='0 0 24 24'>
-                              <path d='M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z' />
-                            </svg>
-                          </motion.div>
-                        )}
-                      </div>
-                    </motion.div>
-                  ))}
-                </div>
-                
-                {/* Scroll Indicator */}
-                <div className='flex justify-center mt-3'>
-                  <div className='flex items-center gap-1'>
-                    <div className='w-2 h-2 rounded-full bg-[#4DA6FF]'></div>
-                    <div className='w-2 h-2 rounded-full bg-white/30'></div>
-                    <div className='w-2 h-2 rounded-full bg-white/30'></div>
-                    <div className='w-2 h-2 rounded-full bg-white/30'></div>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Promotional Banner */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.4, duration: 0.6 }}
-              className='relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.35)]'
-            >
-              <AnimatePresence mode='wait'>
-                <motion.div
-                  key={currentPromoIndex}
-                  initial={{ x: 300, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  exit={{ x: -300, opacity: 0 }}
-                  transition={{ duration: 0.5, ease: 'easeInOut' }}
-                  className='p-6 sm:p-8'
-                  style={{
-                    background: promotionalBanners[currentPromoIndex].gradient
-                  }}
-                >
-                  <div className='relative z-10'>
-                    <div className='flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 mb-2'>
-                      <span className='text-2xl sm:text-3xl lg:text-4xl flex-shrink-0'>{promotionalBanners[currentPromoIndex].icon}</span>
-                      <div className='flex-1 min-w-0'>
-                        <h3 className='text-lg sm:text-xl lg:text-2xl font-bold text-white mb-1 leading-tight' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
-                          {promotionalBanners[currentPromoIndex].title}
-                        </h3>
-                        <p className='text-sm sm:text-base text-white/90' style={{ fontFamily: 'Inter, system-ui' }}>
-                          {promotionalBanners[currentPromoIndex].description}
-                        </p>
-                      </div>
-                      <button className='w-full sm:w-auto px-3 sm:px-4 py-2 bg-white/20 hover:bg-white/30 transition-colors rounded-lg text-white font-medium text-sm border border-white/20 flex-shrink-0' style={{ fontFamily: 'Inter, system-ui' }}>
-                        Claim Now
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Background animation elements */}
-                  <div className='absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse' />
-                  <div className='absolute bottom-0 left-0 w-24 h-24 bg-white/5 rounded-full blur-xl animate-pulse' style={{ animationDelay: '1s' }} />
-                </motion.div>
-              </AnimatePresence>
-              
-              {/* Banner indicators */}
-              <div className='absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2'>
-                {promotionalBanners.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentPromoIndex(index)}
-                    className={`w-2 h-2 rounded-full transition-all ${
-                      index === currentPromoIndex ? 'bg-white w-6' : 'bg-white/50'
-                    }`}
+              <div className='flex items-center gap-4 p-2 bg-white/98 backdrop-blur-xl rounded-2xl border-2 border-gray-200/60 shadow-xl'>
+                <div className='w-5 h-5 rounded-full bg-green-500 shadow-lg ml-2'></div>
+                <div className='flex-1 min-w-0'>
+                  <EnhancedSearchBar
+                    mode='pickup'
+                    placeholder={geocodeLoading ? 'Getting your location...' : coords && !reverseGeocodedAddress ? 'Fetching address...' : 'Enter pickup location'}
+                    onLocationSelect={handlePickupLocationSelect}
+                    value={pickupAddress}
+                    onChange={handlePickupAddressChange}
+                    onFocus={() => setIsPickupInputFocused(true)}
+                    onBlur={() => setIsPickupInputFocused(false)}
+                    className='text-lg'
+                    showCurrentLocationButton={!coords}
+                    onRequestCurrentLocation={handleLocationRetry}
+                    disabled={geocodeLoading}
                   />
-                ))}
-              </div>
-            </motion.div>
-
-            {/* Quick Actions */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8, duration: 0.6 }}
-              className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6'
-            >
-              <button className='p-4 sm:p-6 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-left group'>
-                <div className='flex items-center gap-4'>
-                  <div className='w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#4DA6FF]/20 flex items-center justify-center group-hover:scale-110 transition-transform'>
-                    <span className='text-xl sm:text-2xl'>🚗</span>
-                  </div>
-                  <div>
-                    <h3 className='font-semibold text-white mb-1 text-sm sm:text-base' style={{ fontFamily: 'Inter, system-ui' }}>Book a Ride</h3>
-                    <p className='text-xs sm:text-sm text-gray-400' style={{ fontFamily: 'Inter, system-ui' }}>Quick and affordable transportation</p>
-                  </div>
                 </div>
-              </button>
-
-              <button className='p-4 sm:p-6 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-left group'>
-                <div className='flex items-center gap-4'>
-                  <div className='w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#EFBFFF]/20 flex items-center justify-center group-hover:scale-110 transition-transform'>
-                    <span className='text-xl sm:text-2xl'>📅</span>
-                  </div>
-                  <div>
-                    <h3 className='font-semibold text-white mb-1 text-sm sm:text-base' style={{ fontFamily: 'Inter, system-ui' }}>Schedule Ride</h3>
-                    <p className='text-xs sm:text-sm text-gray-400' style={{ fontFamily: 'Inter, system-ui' }}>Plan your trip in advance</p>
-                  </div>
-                </div>
-              </button>
-
-              <button className='p-4 sm:p-6 rounded-2xl border border-white/10 bg-white/5 hover:bg-white/10 transition-colors text-left group sm:col-span-2 lg:col-span-1'>
-                <div className='flex items-center gap-4'>
-                  <div className='w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-[#7CE7E1]/20 flex items-center justify-center group-hover:scale-110 transition-transform'>
-                    <span className='text-xl sm:text-2xl'>🎁</span>
-                  </div>
-                  <div>
-                    <h3 className='font-semibold text-white mb-1 text-sm sm:text-base' style={{ fontFamily: 'Inter, system-ui' }}>Special Offers</h3>
-                    <p className='text-xs sm:text-sm text-gray-400' style={{ fontFamily: 'Inter, system-ui' }}>Save more on every ride</p>
-                  </div>
-                </div>
-              </button>
-            </motion.div>
-
-            {/* Recent Trips or Additional Content */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.0, duration: 0.6 }}
-              className='rounded-2xl border border-white/10 bg-white/5 p-4 sm:p-6'
-            >
-              <h2 className='text-lg sm:text-xl font-semibold mb-4 text-white' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
-                Recent Activity
-              </h2>
-              <div className='text-center py-6 sm:py-8'>
-                <div className='w-12 h-12 sm:w-16 sm:h-16 mx-auto mb-4 rounded-full bg-gray-500/20 flex items-center justify-center'>
-                  <svg className='w-6 h-6 sm:w-8 sm:h-8 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                    <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z' />
-                  </svg>
-                </div>
-                <p className='text-gray-400 mb-4 text-sm sm:text-base' style={{ fontFamily: 'Inter, system-ui' }}>
-                  No recent trips yet
-                </p>
-                <button className='px-4 sm:px-6 py-2 sm:py-3 bg-[#4DA6FF] text-white rounded-lg hover:bg-[#4DA6FF]/90 transition-colors text-sm sm:text-base' style={{ fontFamily: 'Inter, system-ui' }}>
-                  Take your first ride
-                </button>
+                {pickupLocation && !isPickupConfirmed && pickupAddress && !pickupAddress.includes('Unable to fetch') && (
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={handlePickupConfirmation}
+                    className='px-6 py-4 bg-green-600 text-white rounded-xl text-base hover:bg-green-700 transition-colors font-semibold min-w-[100px] min-h-[56px] shadow-lg mr-2'
+                    style={{ fontFamily: 'Inter, system-ui' }}
+                  >
+                    Confirm
+                  </motion.button>
+                )}
+                {isPickupConfirmed && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={animations.bounce}
+                    className='flex items-center gap-3 px-4 py-3 bg-green-50 rounded-xl border border-green-200 mr-2'
+                  >
+                    <svg className='w-6 h-6 text-green-600' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2.5' d='M5 13l4 4L19 7' />
+                    </svg>
+                    <span className='text-base text-green-800 font-bold' style={{ fontFamily: 'Inter, system-ui' }}>Confirmed</span>
+                  </motion.div>
+                )}
               </div>
             </motion.div>
             
-            {/* Bottom CTA Section */}
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 1.2, duration: 0.6 }}
-              className='mt-6'
-            >
-              <div className='rounded-2xl border border-white/10 bg-[#1A1A1A]/95 backdrop-blur-md p-4 sm:p-6 shadow-[0_8px_30px_rgb(0,0,0,0.35)]'>
-                {/* Selected ride and destination summary */}
-                <div className='mb-4'>
-                  <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3'>
-                    <div className='flex items-center gap-3 min-w-0 flex-1'>
-                      <div className='w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-[#4DA6FF]/20 flex items-center justify-center flex-shrink-0'>
-                        <span className='text-base sm:text-lg'>{selectedRideType?.icon || '🚗'}</span>
-                      </div>
-                      <div className='min-w-0 flex-1'>
-                        <p className='text-sm sm:text-base font-medium text-white truncate' style={{ fontFamily: 'Inter, system-ui' }}>
-                          {selectedRideType ? selectedRideType.name : 'Select a ride type'}
-                        </p>
-                        <p className='text-xs sm:text-sm text-gray-400 truncate' style={{ fontFamily: 'Inter, system-ui' }}>
-                          {destination.trim() ? `To: ${destination}` : 'Enter destination above'}
-                        </p>
-                      </div>
-                    </div>
-                    {selectedRideType && (
-                      <div className='text-left sm:text-right flex-shrink-0'>
-                        <p className='text-base sm:text-lg font-bold text-white' style={{ fontFamily: 'Inter, system-ui' }}>
-                          {selectedRideType.price}
-                        </p>
-                        <p className='text-xs sm:text-sm text-gray-400' style={{ fontFamily: 'Inter, system-ui' }}>
-                          ETA: {selectedRideType.eta}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  {/* Validation indicators */}
-                  <div className='flex items-center justify-center sm:justify-start gap-4 sm:gap-6 text-xs sm:text-sm'>
-                    <div className={`flex items-center gap-2 ${
-                      destination.trim() && !destinationError ? 'text-green-400' : 'text-gray-400'
-                    }`}>
-                      <div className={`w-2 h-2 rounded-full ${
-                        destination.trim() && !destinationError ? 'bg-green-400' : 'bg-gray-500'
-                      }`} />
-                      <span style={{ fontFamily: 'Inter, system-ui' }}>Destination</span>
-                    </div>
-                    <div className={`flex items-center gap-2 ${
-                      selectedRideType ? 'text-green-400' : 'text-gray-400'
-                    }`}>
-                      <div className={`w-2 h-2 rounded-full ${
-                        selectedRideType ? 'bg-green-400' : 'bg-gray-500'
-                      }`} />
-                      <span style={{ fontFamily: 'Inter, system-ui' }}>Ride Type</span>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Primary CTA Button */}
-                <motion.button
-                  onClick={handleConfirmRide}
-                  disabled={isCTADisabled || !selectedRideType}
-                  whileHover={!isCTADisabled && selectedRideType ? { scale: 1.02 } : {}}
-                  whileTap={!isCTADisabled && selectedRideType ? { scale: 0.98 } : {}}
-                  className={`w-full inline-flex items-center justify-center rounded-xl px-6 py-4 text-base sm:text-lg font-bold shadow-[0_8px_30px_rgb(0,0,0,0.35)] ring-1 ring-white/10 transition-all duration-200 ${
-                    isCTADisabled || !selectedRideType
-                      ? 'bg-gray-600 text-gray-300 opacity-50 cursor-not-allowed'
-                      : 'bg-gradient-to-r from-[#4DA6FF] to-[#EFBFFF] text-white hover:shadow-[0_12px_40px_rgb(77,166,255,0.3)] hover:brightness-110'
-                  }`}
-                  style={{ fontFamily: 'Inter, system-ui' }}
-                >
-                  {isCTADisabled || !selectedRideType ? (
-                    <>
-                      <svg className='w-5 h-5 mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z' />
-                      </svg>
-                      Complete Selection
-                    </>
-                  ) : (
-                    <>
-                      <svg className='w-5 h-5 mr-2' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
-                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M5 13l4 4L19 7' />
-                      </svg>
-                      Confirm Ride
-                    </>
-                  )}
-                </motion.button>
-                
-                {/* Help text */}
-                <p className='text-center text-xs text-gray-400 mt-3' style={{ fontFamily: 'Inter, system-ui' }}>
-                  {isCTADisabled 
-                    ? 'Enter a destination above to continue'
-                    : !selectedRideType 
-                    ? 'Select a ride type from the options above'
-                    : 'Review your selection and confirm to book'
-                  }
-                </p>
-              </div>
-            </motion.div>
-          </div>
-        )}
-      </main>
-
-      {/* Bottom Navigation Tabs */}
-      <nav className='fixed bottom-0 left-0 right-0 z-50 bg-[#1A1A1A]/95 backdrop-blur-md border-t border-white/10'>
-        <div className='mx-auto max-w-screen-xl px-4 sm:px-6'>
-          <div className='flex items-center justify-around py-2 sm:py-3'>
-            {bottomNavTabs.map((tab) => (
-              <motion.button
-                key={tab.id}
-                onClick={() => handleBottomNavigation(tab)}
-                whileTap={{ scale: 0.95 }}
-                className={`flex flex-col items-center justify-center min-w-0 flex-1 py-2 px-1 sm:px-2 transition-all duration-200 ${
-                  activeTab === tab.id 
-                    ? 'text-[#4DA6FF]' 
-                    : 'text-gray-400 hover:text-white'
-                }`}
-                style={{ fontFamily: 'Inter, system-ui' }}
+            {/* Enhanced Destination Search Bar */}
+            {isPickupConfirmed && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ ...animations.easeOut, delay: 0.3 }}
+                className='w-full'
               >
-                {/* Icon with background for active state */}
-                <div className={`relative mb-1 transition-all duration-200 ${
-                  activeTab === tab.id 
-                    ? 'transform scale-110' 
-                    : ''
-                }`}>
-                  {activeTab === tab.id && (
-                    <motion.div
-                      layoutId='activeTabBackground'
-                      className='absolute inset-0 -m-2 bg-[#4DA6FF]/20 rounded-full'
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                <div className='flex items-center gap-4 p-2 bg-white/98 backdrop-blur-xl rounded-2xl border-2 border-gray-200/60 shadow-xl'>
+                  <div className='w-5 h-5 rounded-full bg-red-500 shadow-lg ml-2'></div>
+                  <div className='flex-1'>
+                    <EnhancedSearchBar
+                      mode='drop'
+                      placeholder='Where are you going?'
+                      onLocationSelect={handleDestinationSelect}
+                      value={destinationAddress}
+                      onChange={handleDestinationAddressChange}
+                      onFocus={() => setIsDestinationInputFocused(true)}
+                      onBlur={() => setIsDestinationInputFocused(false)}
+                      className='text-lg'
+                      autoFocus={true}
                     />
-                  )}
-                  <span className={`relative z-10 text-lg sm:text-xl transition-all duration-200 ${
-                    activeTab === tab.id 
-                      ? 'filter drop-shadow-sm' 
-                      : ''
-                  }`}>
-                    {tab.icon}
-                  </span>
+                  </div>
                 </div>
-                
-                {/* Label */}
-                <span className={`text-xs sm:text-sm font-medium truncate max-w-full transition-all duration-200 ${
-                  activeTab === tab.id 
-                    ? 'text-[#4DA6FF] font-semibold' 
-                    : 'text-gray-400'
-                }`}>
-                  {tab.name}
-                </span>
-                
-                {/* Active indicator */}
-                {activeTab === tab.id && (
-                  <motion.div
-                    layoutId='activeTabIndicator'
-                    className='absolute top-0 left-1/2 transform -translate-x-1/2 w-6 h-0.5 bg-[#4DA6FF] rounded-full'
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ type: 'spring', stiffness: 500, damping: 30 }}
-                  />
-                )}
-              </motion.button>
-            ))}
+              </motion.div>
+            )}
+            
+            {/* Enhanced Quick Shortcuts with Better UX */}
+            {isPickupConfirmed && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ ...animations.easeOut, delay: 0.4 }}
+                className='flex gap-3 overflow-x-auto pb-2 scrollbar-hide'
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                {savedPlaces.map((place, index) => (
+                  <motion.button
+                    key={place.id}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    initial={{ opacity: 0, x: 20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ ...animations.easeOut, delay: 0.5 + index * 0.1 }}
+                    onClick={() => handleSavedPlaceSelect(place)}
+                    className='flex items-center gap-3 px-6 py-4 bg-white/95 backdrop-blur-md rounded-2xl border border-gray-200/60 hover:bg-white hover:shadow-lg transition-all duration-300 whitespace-nowrap min-h-[56px]'
+                  >
+                    <span className='text-2xl'>{place.icon}</span>
+                    <span className='text-lg font-semibold text-gray-800' style={{ fontFamily: 'Inter, system-ui' }}>{place.name}</span>
+                  </motion.button>
+                ))}
+              </motion.div>
+            )}
+            
+            {/* Enhanced Location Permission Prompt */}
+            {!coords && !manualPickupEntry && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ ...animations.easeOut, delay: 0.2 }}
+                className='w-full'
+              >
+                <div className='bg-white/98 backdrop-blur-xl rounded-2xl p-8 border-2 border-blue-200/60 shadow-xl'>
+                  <div className='flex items-center gap-6 mb-6'>
+                    <div className='w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center'>
+                      <span className='text-4xl'>📍</span>
+                    </div>
+                    <div className='flex-1'>
+                      <h3 className='text-xl font-bold text-gray-900 mb-2' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Enable location for faster pickup</h3>
+                      <p className='text-base text-gray-600' style={{ fontFamily: 'Inter, system-ui' }}>We'll detect your location automatically to make booking easier</p>
+                    </div>
+                  </div>
+                  <div className='flex gap-4'>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={handleLocationRetry}
+                      className='flex-1 py-4 bg-blue-600 text-white rounded-xl text-lg font-semibold hover:bg-blue-700 transition-colors min-h-[56px] shadow-lg'
+                      style={{ fontFamily: 'Inter, system-ui' }}
+                    >
+                      Enable Location
+                    </motion.button>
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setManualPickupEntry(true)}
+                      className='flex-1 py-4 bg-gray-100 text-gray-700 rounded-xl text-lg font-semibold hover:bg-gray-200 transition-colors min-h-[56px] shadow-lg'
+                      style={{ fontFamily: 'Inter, system-ui' }}
+                    >
+                      Enter Manually
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
           </div>
         </div>
-      </nav>
+      </div>
+      
+      {/* Enhanced Ride Options Bottom Sheet */}
+      <AnimatePresence>
+        {showRideOptions && destinationLocation && (
+          <>
+            {/* Enhanced Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className='fixed inset-0 bg-black/60 backdrop-blur-sm z-[700]'
+              onClick={() => setShowRideOptions(false)}
+            />
+            
+            {/* Enhanced Bottom Sheet */}
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={animations.spring}
+              className='fixed bottom-0 left-0 right-0 z-[800] bg-white/98 backdrop-blur-xl border-t-2 border-gray-200/60 rounded-t-3xl max-h-[80vh] overflow-y-auto shadow-2xl'
+            >
+              <div className='p-6'>
+                {/* Handle */}
+                <div className='w-16 h-1.5 bg-gray-300 rounded-full mx-auto mb-6'></div>
+                
+                {/* Header */}
+                <div className='flex items-center justify-between mb-6'>
+                  <h3 className='text-3xl font-bold text-gray-900' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Choose your ride</h3>
+                  <button
+                    onClick={() => setShowRideOptions(false)}
+                    className='w-12 h-12 rounded-full bg-gray-100 flex items-center justify-center hover:bg-gray-200 transition-colors text-gray-600 min-h-[48px]'
+                    aria-label='Close'
+                  >
+                    ✕
+                  </button>
+                </div>
+                
+                {/* Enhanced Route Summary */}
+                <div className='mb-8 p-6 bg-gray-50/80 rounded-2xl border border-gray-200/60'>
+                  <div className='space-y-5'>
+                    <div className='flex items-center gap-4'>
+                      <div className='w-5 h-5 rounded-full bg-green-500 shadow-lg'></div>
+                      <span className='text-lg text-gray-900 font-semibold' style={{ fontFamily: 'Inter, system-ui' }}>
+                        {pickupLocation?.label || pickupAddress || 'Current location'}
+                      </span>
+                    </div>
+                    <div className='flex items-center gap-4 ml-2'>
+                      <div className='w-1 h-8 bg-gray-300 rounded-full'></div>
+                    </div>
+                    <div className='flex items-center gap-4'>
+                      <div className='w-5 h-5 rounded-full bg-red-500 shadow-lg'></div>
+                      <span className='text-lg text-gray-900 font-semibold' style={{ fontFamily: 'Inter, system-ui' }}>
+                        {destinationLocation?.label}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Enhanced Ride Options */}
+                <div className='space-y-4 mb-8'>
+                  {rideOptions.map((option) => {
+                    const estimatedPrice = option.basePrice + (option.pricePerKm * 5) // Rough distance estimate
+                    return (
+                      <motion.button
+                        key={option.id}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        onClick={() => setSelectedRideType(option)}
+                        className={`w-full p-5 rounded-2xl border-2 transition-all duration-300 ${
+                          selectedRideType?.id === option.id
+                            ? 'border-[#4DA6FF] bg-[#4DA6FF]/5 shadow-lg'
+                            : 'border-gray-200 bg-white hover:bg-gray-50 hover:border-gray-300 shadow-sm'
+                        }`}
+                      >
+                        <div className='flex items-center justify-between'>
+                          <div className='flex items-center gap-5'>
+                            <div className='w-16 h-16 rounded-2xl flex items-center justify-center text-3xl shadow-lg' style={{ backgroundColor: option.color + '30' }}>
+                              {option.icon}
+                            </div>
+                            <div className='text-left'>
+                              <h4 className='text-xl font-bold text-gray-900 mb-1' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>{option.name}</h4>
+                              <p className='text-base text-gray-600 mb-1' style={{ fontFamily: 'Inter, system-ui' }}>{option.description}</p>
+                              <p className='text-sm text-gray-500' style={{ fontFamily: 'Inter, system-ui' }}>ETA: {option.eta}</p>
+                            </div>
+                          </div>
+                          <div className='text-right'>
+                            <p className='text-2xl font-bold text-gray-900' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>PKR {estimatedPrice}</p>
+                            <p className='text-sm text-gray-500' style={{ fontFamily: 'Inter, system-ui' }}>Estimated</p>
+                          </div>
+                        </div>
+                      </motion.button>
+                    )
+                  })}
+                </div>
+                
+                {/* Enhanced Payment Method */}
+                <div className='mb-8'>
+                  <button
+                    onClick={() => setShowPaymentSelector(true)}
+                    className='w-full flex items-center justify-between p-5 bg-gray-50/80 rounded-2xl border border-gray-200/60 hover:bg-gray-100/80 transition-colors'
+                  >
+                    <div className='flex items-center gap-4'>
+                      <span className='text-3xl'>{paymentMethods.find(m => m.id === currentPaymentMethod)?.icon}</span>
+                      <div className='text-left'>
+                        <p className='text-lg font-semibold text-gray-900' style={{ fontFamily: 'Inter, system-ui' }}>
+                          {paymentMethods.find(m => m.id === currentPaymentMethod)?.name}
+                        </p>
+                        <p className='text-base text-gray-600' style={{ fontFamily: 'Inter, system-ui' }}>
+                          {paymentMethods.find(m => m.id === currentPaymentMethod)?.description}
+                        </p>
+                      </div>
+                    </div>
+                    <svg className='w-6 h-6 text-gray-500' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M9 5l7 7-7 7' />
+                    </svg>
+                  </button>
+                </div>
+                
+                {/* Enhanced Confirm Button */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  onClick={handleBookRide}
+                  disabled={!selectedRideType || isBookingRide}
+                  className='w-full py-5 bg-gradient-to-r from-[#4DA6FF] to-[#EFBFFF] rounded-2xl font-bold text-xl text-white disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-xl min-h-[64px]'
+                  style={{ fontFamily: 'Poppins, Inter, system-ui' }}
+                >
+                  {isBookingRide ? (
+                    <div className='flex items-center justify-center gap-3'>
+                      <svg className='w-6 h-6 animate-spin' viewBox='0 0 24 24'>
+                        <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4'></circle>
+                        <path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path>
+                      </svg>
+                      <span>Booking your ride...</span>
+                    </div>
+                  ) : (
+                    `Confirm ${selectedRideType?.name || 'Ride'}`
+                  )}
+                </motion.button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* Profile Menu Modal */}
+      <AnimatePresence>
+        {showProfileMenu && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[700]'
+              onClick={() => setShowProfileMenu(false)}
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -20 }}
+              className='fixed top-20 right-4 w-72 bg-[#1A1A1A]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-[800]'
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className='p-6'>
+                <div className='space-y-4'>
+                  <Link
+                    to='/passenger/profile'
+                    className='flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors'
+                    onClick={() => setShowProfileMenu(false)}
+                  >
+                    <span className='text-xl'>👤</span>
+                    <span className='font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Profile</span>
+                  </Link>
+                  
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false)
+                      toast.info('Ride history coming soon')
+                    }}
+                    className='w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-left'
+                  >
+                    <span className='text-xl'>📜</span>
+                    <span className='font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Ride History</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false)
+                      setShowPaymentSelector(true)
+                    }}
+                    className='w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-left'
+                  >
+                    <span className='text-xl'>💰</span>
+                    <span className='font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Wallet</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false)
+                      setShowSafetyToolkit(true)
+                    }}
+                    className='w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-left'
+                  >
+                    <span className='text-xl'>🛡️</span>
+                    <span className='font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Safety</span>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      setShowProfileMenu(false)
+                      toast.info('Settings coming soon')
+                    }}
+                    className='w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-left'
+                  >
+                    <span className='text-xl'>⚙️</span>
+                    <span className='font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Settings</span>
+                  </button>
+                  
+                  <div className='border-t border-white/10 pt-4'>
+                    <button
+                      onClick={() => {
+                        setShowProfileMenu(false)
+                        toast.info('Support coming soon')
+                      }}
+                      className='w-full flex items-center gap-3 p-3 rounded-xl hover:bg-white/10 transition-colors text-left'
+                    >
+                      <span className='text-xl'>🆘</span>
+                      <span className='font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Help & Support</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* Notifications Modal */}
+      <AnimatePresence>
+        {showNotifications && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[700]'
+              onClick={() => setShowNotifications(false)}
+            />
+            
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: -20 }}
+              className='fixed top-20 right-4 w-80 max-w-[calc(100vw-2rem)] bg-[#1A1A1A]/95 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl z-[800] max-h-[70vh] overflow-y-auto'
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className='p-6'>
+                <div className='flex items-center justify-between mb-4'>
+                  <h3 className='text-lg font-bold' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Notifications</h3>
+                  <button
+                    onClick={() => {
+                      setNotificationCount(0)
+                      setShowNotifications(false)
+                    }}
+                    className='text-sm text-[#4DA6FF] hover:text-[#4DA6FF]/80 transition-colors'
+                  >
+                    Clear All
+                  </button>
+                </div>
+                
+                <div className='space-y-3'>
+                  {notifications.map((notification) => (
+                    <div key={notification.id} className='flex items-start gap-3 p-3 rounded-xl hover:bg-white/5 transition-colors'>
+                      <span className='text-xl'>{notification.icon}</span>
+                      <div className='flex-1'>
+                        <h4 className='font-semibold text-sm' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>{notification.title}</h4>
+                        <p className='text-gray-300 text-xs mt-1' style={{ fontFamily: 'Inter, system-ui' }}>{notification.message}</p>
+                        <p className='text-gray-500 text-xs mt-1' style={{ fontFamily: 'Inter, system-ui' }}>{notification.time}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* Payment Method Selector */}
+      <AnimatePresence>
+        {showPaymentSelector && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[700]'
+              onClick={() => setShowPaymentSelector(false)}
+            />
+            
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className='fixed bottom-0 left-0 right-0 z-[800] bg-[#1A1A1A]/95 backdrop-blur-xl border-t border-white/10 rounded-t-3xl'
+            >
+              <div className='p-6'>
+                <div className='w-12 h-1 bg-white/20 rounded-full mx-auto mb-6'></div>
+                
+                <h3 className='text-xl font-bold mb-6' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Payment Method</h3>
+                
+                <div className='space-y-3 mb-6'>
+                  {paymentMethods.map((method) => (
+                    <button
+                      key={method.id}
+                      onClick={() => {
+                        setCurrentPaymentMethod(method.id)
+                        setShowPaymentSelector(false)
+                        toast.success(`Payment method changed to ${method.name}`)
+                      }}
+                      className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all duration-300 ${
+                        currentPaymentMethod === method.id
+                          ? 'border-[#4DA6FF] bg-[#4DA6FF]/10'
+                          : 'border-white/10 bg-white/5 hover:bg-white/10'
+                      }`}
+                    >
+                      <span className='text-2xl'>{method.icon}</span>
+                      <div className='flex-1 text-left'>
+                        <h4 className='font-semibold' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>{method.name}</h4>
+                        <p className='text-sm text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>{method.description}</p>
+                      </div>
+                      {currentPaymentMethod === method.id && (
+                        <svg className='w-5 h-5 text-[#4DA6FF]' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M5 13l4 4L19 7' />
+                        </svg>
+                      )}
+                    </button>
+                  ))}
+                </div>
+                
+                <button
+                  onClick={() => setShowPaymentSelector(false)}
+                  className='w-full py-3 bg-white/10 rounded-xl font-medium hover:bg-white/20 transition-colors'
+                  style={{ fontFamily: 'Inter, system-ui' }}
+                >
+                  Done
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+      
+      {/* Safety Toolkit Modal */}
+      <AnimatePresence>
+        {showSafetyToolkit && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className='fixed inset-0 bg-black/50 backdrop-blur-sm z-[700]'
+              onClick={() => setShowSafetyToolkit(false)}
+            />
+            
+            <motion.div
+              initial={{ y: '100%' }}
+              animate={{ y: 0 }}
+              exit={{ y: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className='fixed bottom-0 left-0 right-0 z-[800] bg-[#1A1A1A]/95 backdrop-blur-xl border-t border-white/10 rounded-t-3xl'
+            >
+              <div className='p-6'>
+                <div className='w-12 h-1 bg-white/20 rounded-full mx-auto mb-6'></div>
+                
+                <div className='flex items-center gap-3 mb-6'>
+                  <span className='text-2xl'>🛡️</span>
+                  <h3 className='text-xl font-bold' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Safety Toolkit</h3>
+                </div>
+                
+                <div className='space-y-4 mb-6'>
+                  <button
+                    onClick={() => {
+                      toast.success('Trip shared with emergency contacts')
+                      setShowSafetyToolkit(false)
+                    }}
+                    className='w-full flex items-center gap-4 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-left'
+                  >
+                    <div className='w-12 h-12 bg-[#4DA6FF]/20 rounded-xl flex items-center justify-center'>
+                      <span className='text-xl'>📍</span>
+                    </div>
+                    <div className='flex-1'>
+                      <h4 className='font-semibold' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Share Trip</h4>
+                      <p className='text-sm text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>Share your location with trusted contacts</p>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      window.location.href = 'tel:15'
+                      setShowSafetyToolkit(false)
+                    }}
+                    className='w-full flex items-center gap-4 p-4 bg-red-500/10 rounded-xl hover:bg-red-500/20 transition-colors text-left border border-red-500/20'
+                  >
+                    <div className='w-12 h-12 bg-red-500/20 rounded-xl flex items-center justify-center'>
+                      <span className='text-xl'>🚨</span>
+                    </div>
+                    <div className='flex-1'>
+                      <h4 className='font-semibold text-red-300' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Emergency Call</h4>
+                      <p className='text-sm text-red-400' style={{ fontFamily: 'Inter, system-ui' }}>Call emergency services (15)</p>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      toast.info('Panic button activated - help is on the way')
+                      setShowSafetyToolkit(false)
+                    }}
+                    className='w-full flex items-center gap-4 p-4 bg-yellow-500/10 rounded-xl hover:bg-yellow-500/20 transition-colors text-left border border-yellow-500/20'
+                  >
+                    <div className='w-12 h-12 bg-yellow-500/20 rounded-xl flex items-center justify-center'>
+                      <span className='text-xl'>⚠️</span>
+                    </div>
+                    <div className='flex-1'>
+                      <h4 className='font-semibold text-yellow-300' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Panic Button</h4>
+                      <p className='text-sm text-yellow-400' style={{ fontFamily: 'Inter, system-ui' }}>Alert emergency contacts immediately</p>
+                    </div>
+                  </button>
+                  
+                  <button
+                    onClick={() => {
+                      toast.info('Support chat coming soon')
+                      setShowSafetyToolkit(false)
+                    }}
+                    className='w-full flex items-center gap-4 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-colors text-left'
+                  >
+                    <div className='w-12 h-12 bg-[#EFBFFF]/20 rounded-xl flex items-center justify-center'>
+                      <span className='text-xl'>💬</span>
+                    </div>
+                    <div className='flex-1'>
+                      <h4 className='font-semibold' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Chat Support</h4>
+                      <p className='text-sm text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>Get help from our support team</p>
+                    </div>
+                  </button>
+                </div>
+                
+                <button
+                  onClick={() => setShowSafetyToolkit(false)}
+                  className='w-full py-3 bg-white/10 rounded-xl font-medium hover:bg-white/20 transition-colors'
+                  style={{ fontFamily: 'Inter, system-ui' }}
+                >
+                  Close
+                </button>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

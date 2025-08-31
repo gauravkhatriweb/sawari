@@ -274,11 +274,11 @@ const PassengerVerifyOtp = () => {
           {/* Navigation help */}
           <div className='mt-6 text-center'>
             <button
-              onClick={() => navigate('/passenger/login')}
+              onClick={() => navigate('/passenger/home')}
               className='text-xs text-gray-400 hover:text-white transition-colors'
               style={{ fontFamily: 'Inter, system-ui' }}
             >
-              ← Back to Login
+              ← Back to Home
             </button>
           </div>
         </section>

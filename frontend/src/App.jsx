@@ -8,6 +8,7 @@ import PassengerRegister from './pages/passengerPages/PassengerRegister'
 import PassengerVerifyOtp from './pages/passengerPages/PassengerVerifyOtp'
 import PassengerProfile from './pages/passengerPages/PassengerProfile'
 import PassengerHome from './pages/passengerPages/PassengerHome'
+
 import PassengerForgotPassword from './pages/passengerPages/PassengerForgotPassword'
 import PassengerResetPassword from './pages/passengerPages/PassengerResetPassword'
 import CaptainLogin from './pages/captainPages/CaptainLogin'
@@ -19,9 +20,10 @@ import TermsPage from './pages/legalPages/TermsPage'
 import PrivacyPage from './pages/legalPages/PrivacyPage'
 import ContactPage from './pages/legalPages/ContactPage'
 import FAQPage from './pages/legalPages/FAQPage'
-import NotFound from './pages/errorPages/NotFound'
+import NotFound from './pages/errorPages/NotFound'  
 import CaptainHome from './pages/captainPages/CaptainHome'
 import CaptainProfile from './pages/captainPages/CaptainProfile'
+
 
 const App = () => {
   return (
@@ -46,9 +48,11 @@ const App = () => {
         <Route path="/legal/privacy" element={<PrivacyPage />} />
         <Route path="/legal/contact" element={<ContactPage />} />
         <Route path="/legal/faq" element={<FAQPage />} />
+      
         <Route path="*" element={<NotFound />} />
         <Route path="/captain/home" element={<CaptainHome />} />
         <Route path="/captain/profile" element={<CaptainProfile />} />
+
       </Routes>
     </div>
   )

@@ -12,6 +12,7 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null)
   const [isAuthenticated, setIsAuthenticated] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [isInitialized, setIsInitialized] = useState(false) // Track if auth state has been initialized
 
   // Load persisted session from storage (localStorage preferred, then sessionStorage)
   useEffect(() => {
@@ -28,6 +29,9 @@ export const UserProvider = ({ children }) => {
       }
     } catch (_) {
       // ignore corrupt storage
+    } finally {
+      // Mark as initialized regardless of success/failure
+      setIsInitialized(true)
     }
   }, [])
 
@@ -154,13 +158,14 @@ export const UserProvider = ({ children }) => {
     user,
     isAuthenticated,
     loading,
+    isInitialized,
     setUser,
     setIsAuthenticated,
     loginPassenger,
     loginCaptain,
     logout,
     updateUserProfile,
-  }), [user, isAuthenticated, loading])
+  }), [user, isAuthenticated, loading, isInitialized])
 
   return (
     <UserContext.Provider value={value}>
