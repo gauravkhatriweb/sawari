@@ -57,7 +57,7 @@ const Features = () => {
           <div className='rounded-xl border border-black/10 bg-white p-6 text-center'>
             <h2 className='text-2xl sm:text-3xl font-bold' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Get in touch</h2>
             <p className='mt-2 text-gray-600'>Questions or feedback? We’re here to help.</p>
-            <button className='mt-4 rounded-full bg-[#4DA6FF] px-6 py-3 text-white font-semibold shadow hover:opacity-90'>
+            <button className='mt-4 rounded-full bg-brand-primary px-6 py-3 text-white font-semibold shadow hover:opacity-90'>
               Contact Us
             </button>
           </div>

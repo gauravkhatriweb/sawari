@@ -12,7 +12,7 @@ const Hero = () => {
           Affordable, safe, and always on time.
         </p>
         <div className='mt-8 flex flex-col sm:flex-row items-center justify-center gap-3'>
-          <button className='rounded-full bg-[#4DA6FF] px-6 py-3 text-white font-semibold shadow hover:opacity-90'>
+          <button className='rounded-full bg-brand-primary px-6 py-3 text-white font-semibold shadow hover:opacity-90'>
             Download App
           </button>
           <button className='rounded-full bg-[#1A1A1A] px-6 py-3 text-white font-semibold ring-1 ring-black/10 hover:opacity-90'>

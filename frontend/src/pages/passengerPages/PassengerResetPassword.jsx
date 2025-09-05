@@ -196,29 +196,29 @@ const PassengerResetPassword = () => {
   }
 
   return (
-    <div className='relative min-h-screen w-full bg-[#1A1A1A] text-white overflow-hidden'>
+    <div className='relative min-h-screen w-full bg-theme-background text-theme-primary overflow-hidden'>
       {/* Ambient gradient orbs following brand guidelines */}
-      <div className='pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-[#4DA6FF] via-[#EFBFFF] to-[#FFD65C] blur-3xl opacity-30' />
-      <div className='pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-gradient-to-tr from-[#7CE7E1] via-[#4DA6FF] to-[#EFBFFF] blur-3xl opacity-25' />
+      <div className='pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-primary blur-3xl opacity-30' />
+      <div className='pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-gradient-secondary blur-3xl opacity-25' />
       
       <main className='relative z-10 flex min-h-screen items-center justify-center px-6'>
         <section className='w-full max-w-md'>
           {/* Logo following brand guidelines */}
           <div className='mb-6 flex items-center justify-center'>
-            <div className='inline-flex items-center justify-center rounded-2xl p-[2px] bg-gradient-to-r from-[#4DA6FF] via-[#EFBFFF] to-[#7CE7E1]'>
-              <div className='rounded-2xl bg-[#1A1A1A] p-3'>
+            <div className='inline-flex items-center justify-center rounded-2xl p-[2px] bg-gradient-primary'>
+              <div className='rounded-2xl bg-theme-background p-3'>
                 <img src={logo} alt='Sawari logo' className='h-9 w-9' />
               </div>
             </div>
           </div>
           
-          <div className='rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.35)]'>
+          <div className='rounded-2xl glass-border glass-bg p-6 sm:p-8 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.35)]'>
             <div className='text-center'>
               <h1 className='text-2xl sm:text-3xl font-bold tracking-tight' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
                 Reset your password
               </h1>
-              <p className='mt-2 text-sm text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
-                Enter the 6-digit code sent to <span className='text-[#4DA6FF] font-medium'>{email}</span> and create a new password.
+              <p className='mt-2 text-sm text-theme-secondary' style={{ fontFamily: 'Inter, system-ui' }}>
+                Enter the 6-digit code sent to <span className='text-brand-primary font-medium'>{email}</span> and create a new password.
               </p>
             </div>
             
@@ -242,7 +242,7 @@ const PassengerResetPassword = () => {
                       onChange={(e) => handleInputChange(index, e.target.value.replace(/\D/, ''))}
                       onKeyDown={(e) => handleKeyDown(index, e)}
                       onPaste={index === 0 ? handlePaste : undefined} // Only first input handles paste
-                      className='w-12 h-12 text-center text-lg font-bold rounded-xl border border-white/10 bg-[#111111] text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent transition-all duration-200'
+                      className='w-12 h-12 text-center text-lg font-bold rounded-xl glass-border bg-theme-surface text-theme-primary placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200'
                       style={{ fontFamily: 'Inter, system-ui' }}
                       aria-label={`Reset code digit ${index + 1}`}
                     />
@@ -250,7 +250,7 @@ const PassengerResetPassword = () => {
                 </div>
                 
                 {/* Paste instruction */}
-                <p className='text-xs text-gray-400 text-center mb-4' style={{ fontFamily: 'Inter, system-ui' }}>
+                <p className='text-xs text-theme-muted text-center mb-4' style={{ fontFamily: 'Inter, system-ui' }}>
                   💡 Tip: You can paste your 6-digit code directly
                 </p>
               </div>
@@ -271,13 +271,13 @@ const PassengerResetPassword = () => {
                       value={newPassword}
                       onChange={(e) => setNewPassword(e.target.value)}
                       placeholder='Enter your new password'
-                      className='block w-full rounded-lg border border-white/10 bg-[#111111] px-4 py-3 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent transition-all duration-200'
+                      className='block w-full rounded-lg glass-border bg-theme-surface px-4 py-3 pr-12 text-theme-primary placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200'
                       style={{ fontFamily: 'Inter, system-ui' }}
                     />
                     <button
                       type='button'
                       onClick={() => setShowPassword(!showPassword)}
-                      className='absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white transition-colors'
+                      className='absolute inset-y-0 right-0 flex items-center pr-3 text-theme-muted hover:text-theme-primary transition-colors'
                     >
                       {showPassword ? (
                         <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -307,13 +307,13 @@ const PassengerResetPassword = () => {
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
                       placeholder='Confirm your new password'
-                      className='block w-full rounded-lg border border-white/10 bg-[#111111] px-4 py-3 pr-12 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent transition-all duration-200'
+                      className='block w-full rounded-lg glass-border bg-theme-surface px-4 py-3 pr-12 text-theme-primary placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent transition-all duration-200'
                       style={{ fontFamily: 'Inter, system-ui' }}
                     />
                     <button
                       type='button'
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className='absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white transition-colors'
+                      className='absolute inset-y-0 right-0 flex items-center pr-3 text-theme-muted hover:text-theme-primary transition-colors'
                     >
                       {showConfirmPassword ? (
                         <svg className='w-5 h-5' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -330,7 +330,7 @@ const PassengerResetPassword = () => {
                 </div>
 
                 {/* Password requirements */}
-                <div className='text-xs text-gray-400 space-y-1' style={{ fontFamily: 'Inter, system-ui' }}>
+                <div className='text-xs text-theme-muted space-y-1' style={{ fontFamily: 'Inter, system-ui' }}>
                   <div className='flex items-center gap-2'>
                     <div className={`w-2 h-2 rounded-full ${newPassword.length >= 6 ? 'bg-green-400' : 'bg-gray-500'}`} />
                     <span>At least 6 characters</span>
@@ -345,16 +345,16 @@ const PassengerResetPassword = () => {
               <button
                 type='submit'
                 disabled={loading || otp.join('').length !== 6 || !newPassword || !confirmPassword}
-                className={`inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-sm sm:text-base font-bold text-white shadow-[0_8px_30px_rgb(0,0,0,0.35)] ring-1 ring-white/10 transition-[transform,background-color,opacity] duration-200 hover:scale-[1.01] active:scale-[0.99] ${
+                className={`inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-sm sm:text-base font-bold text-theme-primary shadow-[0_8px_30px_rgb(0,0,0,0.35)] glass-border transition-[transform,background-color,opacity] duration-200 hover:scale-[1.01] active:scale-[0.99] ${
                   loading || otp.join('').length !== 6 || !newPassword || !confirmPassword
                     ? 'bg-gray-600 opacity-50 cursor-not-allowed'
-                    : 'bg-[#4DA6FF] hover:brightness-110'
+                    : 'bg-brand-primary hover:brightness-110'
                 }`}
                 style={{ fontFamily: 'Inter, system-ui' }}
               >
                 {loading ? (
                   <>
-                    <svg className='animate-spin -ml-1 mr-2 h-4 w-4 text-white' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'>
+                    <svg className='animate-spin -ml-1 mr-2 h-4 w-4 text-theme-primary' xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24'>
                       <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4'></circle>
                       <path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path>
                     </svg>
@@ -374,17 +374,17 @@ const PassengerResetPassword = () => {
               <div className='text-center space-y-3'>
                 {/* Main countdown timer */}
                 <div className='flex items-center justify-center gap-2'>
-                  <svg className='w-4 h-4 text-gray-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <svg className='w-4 h-4 text-theme-muted' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                     <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z' />
                   </svg>
-                  <span className='text-sm text-gray-400' style={{ fontFamily: 'Inter, system-ui' }}>
-                    Code expires in: <span className='text-[#4DA6FF] font-medium'>{formatTime(timeLeft)}</span>
+                  <span className='text-sm text-theme-muted' style={{ fontFamily: 'Inter, system-ui' }}>
+                    Code expires in: <span className='text-brand-primary font-medium'>{formatTime(timeLeft)}</span>
                   </span>
                 </div>
                 
                 {/* Resend OTP */}
                 <div>
-                  <p className='text-xs text-gray-400 mb-2' style={{ fontFamily: 'Inter, system-ui' }}>
+                  <p className='text-xs text-theme-muted mb-2' style={{ fontFamily: 'Inter, system-ui' }}>
                     Didn't receive the code?
                   </p>
                   <button
@@ -393,8 +393,8 @@ const PassengerResetPassword = () => {
                     onClick={handleResendOtp}
                     className={`text-sm font-medium transition-colors ${
                       canResend && resendCooldown === 0
-                        ? 'text-[#4DA6FF] hover:text-[#EFBFFF] cursor-pointer'
-                        : 'text-gray-500 cursor-not-allowed'
+                        ? 'text-brand-primary hover:text-brand-secondary cursor-pointer'
+                        : 'text-theme-muted cursor-not-allowed'
                     }`}
                     style={{ fontFamily: 'Inter, system-ui' }}
                   >
@@ -409,14 +409,14 @@ const PassengerResetPassword = () => {
           <div className='mt-6 text-center space-y-2'>
             <Link
               to='/passenger/login'
-              className='block text-xs text-gray-400 hover:text-white transition-colors'
+              className='block text-xs text-theme-muted hover:text-theme-primary transition-colors'
               style={{ fontFamily: 'Inter, system-ui' }}
             >
               ← Back to Login
             </Link>
             <Link
               to='/passenger/forgot-password'
-              className='block text-xs text-gray-400 hover:text-white transition-colors'
+              className='block text-xs text-theme-muted hover:text-theme-primary transition-colors'
               style={{ fontFamily: 'Inter, system-ui' }}
             >
               Use a different email address

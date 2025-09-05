@@ -284,7 +284,7 @@ const CaptainNavbar = () => {
                           className='w-full text-left px-4 py-3 text-sm hover:bg-white/5 transition-colors flex items-center gap-3'
                           style={{ fontFamily: 'Inter, system-ui' }}
                         >
-                          <svg className='w-4 h-4 text-[#4DA6FF]' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <svg className='w-4 h-4 text-brand-primary' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                             <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
                           </svg>
                           <span>Profile</span>
@@ -344,7 +344,7 @@ const CaptainNavbar = () => {
                 </AnimatePresence>
               </>
             ) : (
-              <button onClick={() => navigate('/captain/login')} className='rounded-full bg-[#4DA6FF] hover:brightness-110 px-4 py-2 text-white text-sm font-semibold shadow hover:shadow-lg transition'>Login</button>
+              <button onClick={() => navigate('/captain/login')} className='rounded-full bg-brand-primary hover:brightness-110 px-4 py-2 text-white text-sm font-semibold shadow hover:shadow-lg transition'>Login</button>
             )}
           </div>
 
@@ -469,7 +469,7 @@ const CaptainNavbar = () => {
                             className='w-full text-left px-4 py-3 text-sm hover:bg-white/5 transition-colors flex items-center gap-3'
                             style={{ fontFamily: 'Inter, system-ui' }}
                           >
-                            <svg className='w-4 h-4 text-[#4DA6FF]' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                            <svg className='w-4 h-4 text-brand-primary' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                               <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
                             </svg>
                             <span>Profile</span>
@@ -500,7 +500,7 @@ const CaptainNavbar = () => {
                   </AnimatePresence>
                 </div>
               ) : (
-                <button onClick={() => { setMenuOpen(false); navigate('/captain/login') }} className='rounded-full bg-[#4DA6FF] hover:brightness-110 px-4 py-2 text-white text-sm font-semibold shadow hover:shadow-lg transition'>Login</button>
+                <button onClick={() => { setMenuOpen(false); navigate('/captain/login') }} className='rounded-full bg-brand-primary hover:brightness-110 px-4 py-2 text-white text-sm font-semibold shadow hover:shadow-lg transition'>Login</button>
               )}
             </div>
           </div>

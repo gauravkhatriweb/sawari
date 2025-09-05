@@ -1,0 +1,71 @@
+/* Z-Index Layer Management System */
+/* This file defines a consistent z-index hierarchy across the application */
+
+:root {
+  /* Base layers */
+  --z-base: 0;
+  --z-content: 10;
+  --z-elevated: 50;
+  
+  /* Navigation layers */
+  --z-navbar: 100;
+  --z-navbar-dropdown: 110;
+  
+  /* Map layers */
+  --z-map: 200;
+  --z-map-controls: 300;
+  --z-map-markers: 350;
+  --z-map-recenter: 400;
+  
+  /* Search and input layers */
+  --z-search-dropdown: 500;
+  --z-input-focus: 510;
+  
+  /* Overlay layers */
+  --z-overlay-low: 600;
+  --z-overlay-medium: 700;
+  --z-overlay-high: 800;
+  
+  /* Modal and popup layers */
+  --z-modal-backdrop: 900;
+  --z-modal-content: 1000;
+  --z-tooltip: 1100;
+  
+  /* Critical system layers */
+  --z-notification: 1200;
+  --z-loading: 1300;
+  --z-emergency: 9999;
+}
+
+/* Apply z-index classes */
+.z-base { z-index: var(--z-base); }
+.z-content { z-index: var(--z-content); }
+.z-elevated { z-index: var(--z-elevated); }
+.z-navbar { z-index: var(--z-navbar); }
+.z-navbar-dropdown { z-index: var(--z-navbar-dropdown); }
+.z-map { z-index: var(--z-map); }
+.z-map-controls { z-index: var(--z-map-controls); }
+.z-map-markers { z-index: var(--z-map-markers); }
+.z-map-recenter { z-index: var(--z-map-recenter); }
+.z-search-dropdown { z-index: var(--z-search-dropdown); }
+.z-input-focus { z-index: var(--z-input-focus); }
+.z-overlay-low { z-index: var(--z-overlay-low); }
+.z-overlay-medium { z-index: var(--z-overlay-medium); }
+.z-overlay-high { z-index: var(--z-overlay-high); }
+.z-modal-backdrop { z-index: var(--z-modal-backdrop); }
+.z-modal-content { z-index: var(--z-modal-content); }
+.z-tooltip { z-index: var(--z-tooltip); }
+.z-notification { z-index: var(--z-notification); }
+.z-loading { z-index: var(--z-loading); }
+.z-emergency { z-index: var(--z-emergency); }
+
+/* Responsive z-index adjustments for mobile */
+@media (max-width: 768px) {
+  .z-search-dropdown {
+    z-index: var(--z-overlay-medium);
+  }
+  
+  .z-map-recenter {
+    z-index: var(--z-overlay-low);
+  }
+}

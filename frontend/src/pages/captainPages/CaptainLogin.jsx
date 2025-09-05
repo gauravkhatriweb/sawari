@@ -62,31 +62,31 @@ const CaptainLogin = () => {
   }
 
   return (
-    <div className='relative min-h-screen w-full bg-[#1A1A1A] text-white overflow-hidden'>
+    <div className='relative min-h-screen w-full bg-theme-base text-theme-primary overflow-hidden'>
       {/* Ambient gradient orbs */}
-      <div className='pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-[#4DA6FF] via-[#EFBFFF] to-[#FFD65C] blur-3xl opacity-30' />
-      <div className='pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-gradient-to-tr from-[#7CE7E1] via-[#4DA6FF] to-[#EFBFFF] blur-3xl opacity-25' />
+      <div className='pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-brand-primary/30 via-brand-secondary/30 to-brand-accent/30 blur-3xl' />
+      <div className='pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-gradient-to-tr from-brand-aqua/25 via-brand-primary/25 to-brand-secondary/25 blur-3xl' />
 
       <main className='relative z-10 flex min-h-screen items-center justify-center px-6'>
         <section className='w-full max-w-md'>
           <div className='mb-4 flex items-center justify-center'>
-            <div className='inline-flex items-center justify-center rounded-2xl p-[2px] bg-gradient-to-r from-[#4DA6FF] via-[#EFBFFF] to-[#7CE7E1]'>
-              <div className='rounded-2xl bg-[#1A1A1A] p-3'>
+            <div className='inline-flex items-center justify-center rounded-2xl p-[2px] bg-gradient-hero'>
+              <div className='rounded-2xl bg-theme-base p-3'>
                 <img src={logo} alt='Sawari.pk logo' className='h-9 w-9' />
               </div>
             </div>
           </div>
-          <div className='rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.35)]'>
+          <div className='glass-card p-6 sm:p-8'>
             <div className='text-center'>
               <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>Welcome back</h1>
-              <p className='mt-1 text-sm text-gray-300'>Manage your rides with Sawari.pk.</p>
+              <p className='mt-1 text-sm text-theme-secondary'>Manage your rides with Sawari.pk.</p>
             </div>
 
             <form onSubmit={handleSubmit} className='mt-6 space-y-4'>
               <div>
                 <label htmlFor='email' className='block text-sm font-medium mb-1'>Email</label>
                 <div className='relative'>
-                  <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500'>
+                  <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted'>
                     {/* mail icon */}
                     <svg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
                       <path d='M4 6.5C4 5.67157 4.67157 5 5.5 5H18.5C19.3284 5 20 5.67157 20 6.5V17.5C20 18.3284 19.3284 19 18.5 19H5.5C4.67157 19 4 18.3284 4 17.5V6.5Z' stroke='currentColor' strokeWidth='1.5'/>
@@ -100,7 +100,7 @@ const CaptainLogin = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder='you@example.com'
                     aria-invalid={Boolean(error)}
-                    className='w-full rounded-xl border border-white/10 bg-[#111111] pl-10 pr-4 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent'
+                    className='w-full rounded-xl glass-border bg-theme-surface pl-10 pr-4 py-3 text-sm placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent'
                   />
                 </div>
               </div>
@@ -108,7 +108,7 @@ const CaptainLogin = () => {
               <div>
                 <label htmlFor='password' className='block text-sm font-medium mb-1'>Password</label>
                 <div className='relative'>
-                  <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500'>
+                  <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted'>
                     {/* lock icon */}
                     <svg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
                       <rect x='4.75' y='10' width='14.5' height='9.5' rx='2.25' stroke='currentColor' strokeWidth='1.5'/>
@@ -122,19 +122,19 @@ const CaptainLogin = () => {
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder='••••••••'
                     aria-invalid={Boolean(error)}
-                    className='w-full rounded-xl border border-white/10 bg-[#111111] pl-10 pr-12 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent'
+                    className='w-full rounded-xl glass-border bg-theme-surface pl-10 pr-12 py-3 text-sm placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent'
                   />
                   <button
                     type='button'
                     onClick={() => setShowPassword(!showPassword)}
-                    className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-300 hover:text-white'
+                    className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-theme-secondary hover:text-theme-primary'
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
                 <div className='mt-2 flex items-center justify-end'>
-                  <Link to='/captain/forgot-password' className='text-xs text-gray-300 hover:text-white'>
+                  <Link to='/captain/forgot-password' className='text-xs text-theme-secondary hover:text-theme-primary'>
                     Forgot password?
                   </Link>
                 </div>
@@ -149,36 +149,36 @@ const CaptainLogin = () => {
               <button
                 type='submit'
                 disabled={isSubmitting}
-                className={`mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-sm sm:text-base font-bold text-white shadow-[0_8px_30px_rgb(0,0,0,0.35)] ring-1 ring-white/10 transition-[transform,background-color,opacity] duration-200 hover:scale-[1.01] active:scale-[0.99] ${isSubmitting ? 'bg-black/70 opacity-75' : 'bg-black'}`}
+                className={`mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-sm sm:text-base font-bold text-theme-primary shadow-[0_8px_30px_rgb(0,0,0,0.35)] glass-border transition-[transform,background-color,opacity] duration-200 hover:scale-[1.01] active:scale-[0.99] ${isSubmitting ? 'bg-black/70 opacity-75' : 'bg-black'}`}
               >
                 {isSubmitting ? 'Logging in...' : 'Log in as Captain'}
               </button>
 
-              <div className='mt-3 flex items-center justify-between text-xs text-gray-300'>
-                <span>Don’t have an account?</span>
-                <Link to='/captain/register' className='font-medium text-white'>Create account</Link>
+              <div className='mt-3 flex items-center justify-between text-xs text-theme-secondary'>
+                <span>Don't have an account?</span>
+                <Link to='/captain/register' className='font-medium text-theme-primary'>Create account</Link>
               </div>
 
               <div className='relative mt-6'>
                 <div className='absolute inset-0 flex items-center' aria-hidden='true'>
-                  <span className='w-full border-t border-white/10'></span>
+                  <span className='w-full border-t glass-border'></span>
                 </div>
                 <div className='relative flex justify-center text-xs'>
-                  <span className='bg-white/5 px-2 text-gray-400'>or</span>
+                  <span className='glass-bg px-2 text-theme-muted'>or</span>
                 </div>
               </div>
 
               <button
                 type='button'
                 onClick={() => navigate('/passenger/login')}
-                className='inline-flex w-full items-center justify-center rounded-full bg-white/10 px-6 py-3 text-sm sm:text-base font-semibold text-white ring-1 ring-white/10 transition-[background-color,transform] hover:bg-white/15 hover:scale-[1.005]'
+                className='inline-flex w-full items-center justify-center rounded-full glass-bg px-6 py-3 text-sm sm:text-base font-semibold text-theme-primary glass-border transition-[background-color,transform] hover:glass-hover-bg hover:scale-[1.005]'
               >
                 Log in as Passenger
               </button>
             </form>
           </div>
 
-          <div className='mt-6 text-center text-xs text-gray-400'>
+          <div className='mt-6 text-center text-xs text-theme-muted'>
             By continuing, you agree to our
             <Link to='/legal/terms' className='mx-1 underline decoration-white/40 hover:decoration-white'> Terms</Link>
             and

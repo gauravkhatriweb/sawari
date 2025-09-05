@@ -339,11 +339,11 @@ const PassengerProfile = () => {
   // Show loading state
   if (loading) {
     return (
-      <div className='min-h-screen bg-[#1A1A1A] text-white'>
+      <div className='min-h-screen bg-theme-background text-theme-primary'>
         <Navbar />
         <div className='flex items-center justify-center min-h-[calc(100vh-56px)]'>
           <div className='flex items-center gap-3'>
-            <svg className='w-6 h-6 animate-spin text-[#4DA6FF]' viewBox='0 0 24 24'>
+            <svg className='w-6 h-6 animate-spin text-brand-primary' viewBox='0 0 24 24'>
               <circle className='opacity-25' cx='12' cy='12' r='10' stroke='currentColor' strokeWidth='4'></circle>
               <path className='opacity-75' fill='currentColor' d='M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z'></path>
             </svg>
@@ -357,7 +357,7 @@ const PassengerProfile = () => {
   // Show error state
   if (error) {
     return (
-      <div className='min-h-screen bg-[#1A1A1A] text-white'>
+      <div className='min-h-screen bg-theme-background text-theme-primary'>
         <Navbar />
         <div className='flex items-center justify-center min-h-[calc(100vh-56px)]'>
           <div className='text-center max-w-md mx-auto px-6'>
@@ -367,18 +367,18 @@ const PassengerProfile = () => {
               </svg>
             </div>
             <h2 className='text-xl font-semibold mb-2' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>Unable to Load Profile</h2>
-            <p className='text-gray-300 mb-6' style={{ fontFamily: 'Inter, system-ui' }}>{error}</p>
+            <p className='text-theme-secondary mb-6' style={{ fontFamily: 'Inter, system-ui' }}>{error}</p>
             <div className='flex gap-3 justify-center'>
               <button
                 onClick={() => window.location.reload()}
-                className='px-4 py-2 bg-[#4DA6FF] text-white rounded-lg font-medium hover:bg-[#4DA6FF]/90 transition-colors'
+                className='px-4 py-2 bg-brand-primary text-theme-primary rounded-lg font-medium hover:bg-brand-primary/90 transition-colors'
                 style={{ fontFamily: 'Inter, system-ui' }}
               >
                 Try Again
               </button>
               <Link
                 to='/'
-                className='px-4 py-2 border border-white/20 text-white rounded-lg font-medium hover:bg-white/5 transition-colors'
+                className='px-4 py-2 glass-border text-theme-primary rounded-lg font-medium hover:bg-white/5 transition-colors'
                 style={{ fontFamily: 'Inter, system-ui' }}
               >
                 Go Home
@@ -391,12 +391,12 @@ const PassengerProfile = () => {
   }
 
   return (
-    <div className='min-h-screen bg-[#1A1A1A] text-white'>
+    <div className='min-h-screen bg-theme-background text-theme-primary'>
       <Navbar />
       
       {/* Background gradient orbs */}
-      <div className='pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-[#4DA6FF] via-[#EFBFFF] to-[#FFD65C] blur-3xl opacity-20' />
-      <div className='pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-gradient-to-tr from-[#7CE7E1] via-[#4DA6FF] to-[#EFBFFF] blur-3xl opacity-15' />
+      <div className='pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-brand-primary via-brand-secondary to-brand-accent blur-3xl opacity-20' />
+      <div className='pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-gradient-to-tr from-brand-tertiary via-brand-primary to-brand-secondary blur-3xl opacity-15' />
 
       <main className='relative z-10 mx-auto max-w-4xl px-6 py-12'>
         <motion.div
@@ -409,7 +409,7 @@ const PassengerProfile = () => {
             <h1 className='text-3xl font-bold mb-2' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
               Profile
             </h1>
-            <p className='text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
+            <p className='text-theme-secondary' style={{ fontFamily: 'Inter, system-ui' }}>
               Manage your account information and settings
             </p>
           </div>
@@ -419,15 +419,15 @@ const PassengerProfile = () => {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.6 }}
-            className='rounded-2xl border border-white/10 bg-[#1A1A1A]/95 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] overflow-hidden'
+            className='rounded-2xl glass-border bg-theme-background/95 backdrop-blur-md shadow-[0_8px_30px_rgba(0,0,0,0.35)] overflow-hidden'
           >
             {/* Profile Header */}
-            <div className='px-6 py-6 border-b border-white/10 bg-gradient-to-r from-[#4DA6FF]/10 via-[#EFBFFF]/10 to-[#7CE7E1]/10'>
+            <div className='px-6 py-6 border-b glass-border bg-gradient-to-r from-brand-primary/10 via-brand-secondary/10 to-brand-tertiary/10'>
               <div className='flex flex-col sm:flex-row items-center gap-6'>
                 {/* Profile Picture Section */}
                 <div className='relative group'>
                   {/* Main Profile Picture */}
-                  <div className='relative w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center text-3xl font-bold text-white shadow-xl border-4 border-white/20 group-hover:border-white/30 transition-all duration-300'>
+                  <div className='relative w-24 h-24 rounded-full overflow-hidden bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center text-3xl font-bold text-theme-primary shadow-xl border-4 border-white/20 group-hover:border-white/30 transition-all duration-300'>
                     {profile?.profilePic ? (
                       <img 
                         src={`http://localhost:3000${profile.profilePic}`} 
@@ -439,7 +439,7 @@ const PassengerProfile = () => {
                         }}
                       />
                     ) : null}
-                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] ${profile?.profilePic ? 'hidden' : 'flex'}`}>
+                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-primary to-brand-secondary ${profile?.profilePic ? 'hidden' : 'flex'}`}>
                       {profile?.firstname?.charAt(0)?.toUpperCase() || profile?.firstName?.charAt(0)?.toUpperCase() || 'U'}
                     </div>
                   </div>
@@ -448,10 +448,10 @@ const PassengerProfile = () => {
                   <div className='absolute inset-0 rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center'>
                     <label 
                       htmlFor='profilePicInput' 
-                      className='cursor-pointer p-2 bg-white/20 rounded-full backdrop-blur-sm border border-white/30 hover:bg-white/30 transition-all duration-200 transform hover:scale-110'
+                      className='cursor-pointer p-2 bg-white/20 rounded-full backdrop-blur-sm glass-border hover:bg-white/30 transition-all duration-200 transform hover:scale-110'
                       title={profile?.profilePic ? 'Update profile picture' : 'Upload profile picture'}
                     >
-                      <svg className='w-5 h-5 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                      <svg className='w-5 h-5 text-theme-primary' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                         <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z' />
                         <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M15 13a3 3 0 11-6 0 3 3 0 016 0z' />
                       </svg>
@@ -470,10 +470,10 @@ const PassengerProfile = () => {
                         whileTap={{ scale: 0.95 }}
                         onClick={handleDeleteProfilePicture}
                         disabled={isUploading}
-                        className='w-7 h-7 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:opacity-50 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 border-2 border-white/20'
+                        className='w-7 h-7 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 disabled:opacity-50 rounded-full flex items-center justify-center shadow-lg transition-all duration-200 border-2 glass-border'
                         title='Remove profile picture'
                       >
-                        <svg className='w-3.5 h-3.5 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                        <svg className='w-3.5 h-3.5 text-theme-primary' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                           <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M6 18L18 6M6 6l12 12' />
                         </svg>
                       </motion.button>
@@ -492,10 +492,10 @@ const PassengerProfile = () => {
                 
                 {/* Profile Info */}
                 <div className='flex-1 text-center sm:text-left'>
-                  <h2 className='text-xl font-semibold text-white mb-1' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
+                  <h2 className='text-xl font-semibold text-theme-primary mb-1' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
                     {profile?.firstname || profile?.firstName || 'Unknown'} {profile?.lastname || profile?.lastName || ''}
                   </h2>
-                  <p className='text-gray-300 mb-2' style={{ fontFamily: 'Inter, system-ui' }}>
+                  <p className='text-theme-secondary mb-2' style={{ fontFamily: 'Inter, system-ui' }}>
                     {profile?.email || 'No email provided'}
                   </p>
                   {/* Verification Status */}
@@ -525,25 +525,25 @@ const PassengerProfile = () => {
               <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
                 {/* Account Information */}
                 <div>
-                  <h3 className='text-lg font-semibold mb-4 text-[#4DA6FF]' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
+                  <h3 className='text-lg font-semibold mb-4 text-brand-primary' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
                     Account Information
                   </h3>
                   <div className='space-y-4'>
-                    <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
-                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>First Name</label>
-                      <p className='text-white mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
+                    <div className='p-4 rounded-xl glass-border bg-white/5'>
+                      <label className='text-sm text-theme-muted font-medium' style={{ fontFamily: 'Inter, system-ui' }}>First Name</label>
+                      <p className='text-theme-primary mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
                         {profile?.firstname || profile?.firstName || 'Not provided'}
                       </p>
                     </div>
-                    <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
+                    <div className='p-4 rounded-xl glass-border bg-white/5'>
                       <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Last Name</label>
-                      <p className='text-white mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
+                      <p className='text-theme-primary mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
                         {profile?.lastname || profile?.lastName || 'Not provided'}
                       </p>
                     </div>
-                    <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
-                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Email Address</label>
-                      <p className='text-white mt-1 break-all' style={{ fontFamily: 'Inter, system-ui' }}>
+                    <div className='p-4 rounded-xl glass-border bg-white/5'>
+                      <label className='text-sm text-theme-muted font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Email Address</label>
+                      <p className='text-theme-primary mt-1 break-all' style={{ fontFamily: 'Inter, system-ui' }}>
                         {profile?.email || 'Not provided'}
                       </p>
                     </div>
@@ -552,19 +552,19 @@ const PassengerProfile = () => {
 
                 {/* Account Details */}
                 <div>
-                  <h3 className='text-lg font-semibold mb-4 text-[#EFBFFF]' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
+                  <h3 className='text-lg font-semibold mb-4 text-brand-secondary' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
                     Account Details
                   </h3>
                   <div className='space-y-4'>
-                    <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
-                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Account ID</label>
-                      <p className='text-white mt-1 font-mono text-sm break-all' style={{ fontFamily: 'Inter, system-ui' }}>
+                    <div className='p-4 rounded-xl glass-border bg-white/5'>
+                      <label className='text-sm text-theme-muted font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Account ID</label>
+                      <p className='text-theme-primary mt-1 font-mono text-sm break-all' style={{ fontFamily: 'Inter, system-ui' }}>
                         {profile?._id || 'Not available'}
                       </p>
                     </div>
-                    <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
-                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Member Since</label>
-                      <p className='text-white mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
+                    <div className='p-4 rounded-xl glass-border bg-white/5'>
+                      <label className='text-sm text-theme-muted font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Member Since</label>
+                      <p className='text-theme-primary mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
                         {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
@@ -572,9 +572,9 @@ const PassengerProfile = () => {
                         }) : 'Not available'}
                       </p>
                     </div>
-                    <div className='p-4 rounded-xl border border-white/10 bg-white/5'>
-                      <label className='text-sm text-gray-400 font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Last Updated</label>
-                      <p className='text-white mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
+                    <div className='p-4 rounded-xl glass-border bg-white/5'>
+                      <label className='text-sm text-theme-muted font-medium' style={{ fontFamily: 'Inter, system-ui' }}>Last Updated</label>
+                      <p className='text-theme-primary mt-1' style={{ fontFamily: 'Inter, system-ui' }}>
                         {profile?.updatedAt ? new Date(profile.updatedAt).toLocaleDateString('en-US', {
                           year: 'numeric',
                           month: 'long',
@@ -587,13 +587,13 @@ const PassengerProfile = () => {
               </div>
 
               {/* Actions */}
-              <div className='mt-8 pt-6 border-t border-white/10'>
+              <div className='mt-8 pt-6 border-t glass-border'>
                 <div className='flex flex-col sm:flex-row gap-4 justify-between items-start sm:items-center'>
                   <div>
-                    <h3 className='text-lg font-semibold text-[#7CE7E1] mb-1' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
+                    <h3 className='text-lg font-semibold text-brand-tertiary mb-1' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
                       Account Actions
                     </h3>
-                    <p className='text-sm text-gray-400' style={{ fontFamily: 'Inter, system-ui' }}>
+                    <p className='text-sm text-theme-muted' style={{ fontFamily: 'Inter, system-ui' }}>
                       Manage your account settings and preferences
                     </p>
                   </div>
@@ -620,7 +620,7 @@ const PassengerProfile = () => {
                     {/* Back to Home */}
                     <Link
                       to='/passenger/home'
-                      className='inline-flex items-center gap-2 px-4 py-2 bg-[#4DA6FF] text-white rounded-lg hover:bg-[#4DA6FF]/90 transition-colors'
+                      className='inline-flex items-center gap-2 px-4 py-2 bg-brand-primary text-theme-primary rounded-lg hover:bg-brand-primary/90 transition-colors'
                       style={{ fontFamily: 'Inter, system-ui' }}
                     >
                       <svg className='w-4 h-4' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
@@ -651,22 +651,22 @@ const PassengerProfile = () => {
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               transition={{ type: 'spring', duration: 0.5 }}
-              className='bg-gradient-to-br from-[#1A1A1A] to-[#0A0A0A] border border-white/20 rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl backdrop-blur-xl'
+              className='bg-gradient-to-br from-theme-background to-theme-background/80 glass-border rounded-3xl p-8 max-w-sm w-full mx-4 shadow-2xl backdrop-blur-xl'
               onClick={(e) => e.stopPropagation()}
             >
               <div className='text-center'>
                 {/* Header */}
                 <div className='mb-6'>
-                  <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center'>
-                    <svg className='w-8 h-8 text-white' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                  <div className='w-16 h-16 mx-auto mb-4 rounded-full bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center'>
+                    <svg className='w-8 h-8 text-theme-primary' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z' />
                       <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M15 13a3 3 0 11-6 0 3 3 0 016 0z' />
                     </svg>
                   </div>
-                  <h3 className='text-2xl font-bold text-white mb-2' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
+                  <h3 className='text-2xl font-bold text-theme-primary mb-2' style={{ fontFamily: 'Poppins, Inter, system-ui' }}>
                     {profile?.profilePic ? 'Update Photo' : 'Add Photo'}
                   </h3>
-                  <p className='text-gray-400 text-sm' style={{ fontFamily: 'Inter, system-ui' }}>
+                  <p className='text-theme-muted text-sm' style={{ fontFamily: 'Inter, system-ui' }}>
                     Choose a clear photo of yourself
                   </p>
                 </div>
@@ -682,7 +682,7 @@ const PassengerProfile = () => {
                       <img 
                         src={imagePreview} 
                         alt='Preview' 
-                        className='w-full h-full rounded-full object-cover border-4 border-white/20 shadow-2xl'
+                        className='w-full h-full rounded-full object-cover border-4 glass-border shadow-2xl'
                       />
                       <div className='absolute inset-0 rounded-full bg-gradient-to-t from-black/20 to-transparent' />
                     </div>
@@ -696,7 +696,7 @@ const PassengerProfile = () => {
                     whileTap={{ scale: 0.98 }}
                     onClick={closeUploadModal}
                     disabled={isUploading}
-                    className='px-6 py-3 border border-white/20 text-white rounded-xl hover:bg-white/5 disabled:opacity-50 transition-all duration-200 font-medium'
+                    className='px-6 py-3 glass-border text-theme-primary rounded-xl hover:bg-white/5 disabled:opacity-50 transition-all duration-200 font-medium'
                     style={{ fontFamily: 'Inter, system-ui' }}
                   >
                     Cancel
@@ -706,7 +706,7 @@ const PassengerProfile = () => {
                     whileTap={{ scale: 0.98 }}
                     onClick={profile?.profilePic ? handleUpdateProfilePicture : handleUploadProfilePicture}
                     disabled={isUploading || !selectedFile}
-                    className='px-8 py-3 bg-gradient-to-r from-[#4DA6FF] to-[#EFBFFF] text-white rounded-xl hover:from-[#4DA6FF]/90 hover:to-[#EFBFFF]/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-3 font-semibold shadow-lg shadow-[#4DA6FF]/25'
+                    className='px-8 py-3 bg-gradient-to-r from-brand-primary to-brand-secondary text-theme-primary rounded-xl hover:from-brand-primary/90 hover:to-brand-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 flex items-center gap-3 font-semibold shadow-lg shadow-brand-primary/25'
                     style={{ fontFamily: 'Inter, system-ui' }}
                   >
                     {isUploading && (
@@ -730,9 +730,9 @@ const PassengerProfile = () => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.3 }}
-                    className='mt-6 p-4 bg-white/5 rounded-xl border border-white/10'
+                    className='mt-6 p-4 bg-white/5 rounded-xl glass-border'
                   >
-                    <p className='text-xs text-gray-400' style={{ fontFamily: 'Inter, system-ui' }}>
+                    <p className='text-xs text-theme-muted' style={{ fontFamily: 'Inter, system-ui' }}>
                       📝 Choose JPG, JPEG, or PNG • Max 2MB
                     </p>
                   </motion.div>

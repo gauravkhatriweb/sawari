@@ -274,3 +274,44 @@ SearchBar has built-in responsive styles with proper z-index management:
 - **Error States**: Clear visual and textual error indication
 
 This implementation provides a robust, accessible, and performant location search and mapping solution for the Sawari platform.
+
+---
+
+## New Booking UI Components (Frontend-only, dummy data)
+
+- RideOptionsCarousel.jsx: Select Economy/Premium/Bike/Rickshaw/Parcel with ETA, price, and Sawari Pink toggle
+- FareBreakdownCard.jsx: Transparent fare breakdown (base, per-km, per-min) and disclaimer
+- PaymentSelector.jsx: Choose Cash, Easypaisa, or JazzCash (visual only)
+- SchedulePicker.jsx: Book Now or pick date/time (no backend)
+- LanguageToggle.jsx: Switch label language between English, Urdu, Roman Urdu
+- LowBandwidthToggle.jsx: Replace live map with static placeholder when enabled
+- SavedPlaces.jsx: Quick-pick Home/Work/University presets
+- SafetyControls.jsx: SOS, Share ETA, and verification badge UI
+
+These components are used on the Book Ride page and Passenger Home for marketing and quick actions. All interactions are mocked and local-only.
+
+## Manual Test Checklist
+
+Home (/)
+- See marketing hero and Book CTA; clicking Book navigates to /book
+- See wallet preview and saved places preview on Passenger Home if routing there
+- Check focus states and keyboard navigation on links and buttons
+
+Book Ride (/book)
+- Map renders; toggle Low Bandwidth to swap live map for placeholder
+- Pickup defaults to current location label (mocked via hooks) and is editable; type at least 3 chars to see Nominatim suggestions
+- Select a drop from suggestions; ride options bottom sheet appears
+- Switch between vehicle options; Sawari Pink toggle filters to female-only option visually
+- FareBreakdownCard updates based on selected ride (dummy math)
+- Select payment method; it becomes highlighted
+- Toggle Language and verify labels change
+- Choose Schedule: Now vs Later (enter date/time)
+- Click Confirm; modal appears with confirmation and Close returns to page
+
+Accessibility
+- Navigate inputs and buttons with keyboard; check focus rings
+- ARIA labels present on interactive controls
+
+Notes
+- All network calls are mocked except Nominatim for search
+- Backend-dependent Navbar calls may fail locally if backend is not running; they don’t block booking UI

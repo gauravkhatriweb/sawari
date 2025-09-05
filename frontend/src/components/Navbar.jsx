@@ -57,14 +57,15 @@ const Navbar = () => {
   // Theme persistence
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('sawari_theme')
+      const stored = localStorage.getItem('theme')
       if (stored === 'light' || stored === 'dark') setTheme(stored)
       else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme('dark')
     } catch (_) {}
   }, [])
   useEffect(() => {
     try {
-      localStorage.setItem('sawari_theme', theme)
+      localStorage.setItem('theme', theme)
+      document.documentElement.className = `theme-${theme}`
       if (theme === 'dark') document.documentElement.classList.add('dark')
       else document.documentElement.classList.remove('dark')
     } catch (_) {}
@@ -201,7 +202,7 @@ const Navbar = () => {
   }
 
   return (
-    <header className={`sticky top-0 z-50 w-full transition-colors ${scrolled ? 'backdrop-blur' : ''} ${scrolled ? 'bg-[#1A1A1A]/70 border-white/10' : 'bg-transparent'} border-b text-white`}>
+    <header className={`sticky top-0 z-50 w-full transition-colors ${scrolled ? 'backdrop-theme border-theme-base' : 'bg-transparent'} border-b text-theme-primary`}>
       <div className='mx-auto max-w-screen-xl px-6'>
         <div className='flex h-14 items-center justify-between'>
           {/* Logo */}
@@ -216,7 +217,7 @@ const Navbar = () => {
               <button
                 key={item.id}
                 onClick={() => handleNavigation(item)}
-                className={`transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4DA6FF] rounded-full px-2 py-1 ${active === item.id ? 'bg-clip-text text-transparent bg-gradient-to-r from-[#4DA6FF] via-[#EFBFFF] to-[#7CE7E1]' : 'opacity-80 hover:opacity-100'}`}
+                className={`transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-primary rounded-full px-2 py-1 ${active === item.id ? 'bg-clip-text text-transparent bg-gradient-brand-flow' : 'opacity-80 hover:opacity-100'}`}
               >
                 {item.label}
               </button>
@@ -226,10 +227,10 @@ const Navbar = () => {
           {/* Right actions: Login or Passenger avatar */}
           <div className='hidden md:flex items-center gap-3 relative' ref={dropdownRef}>
             {!isPassengerAuth || !passenger ? (
-              <button onClick={() => navigate('/passenger/login')} className='rounded-full bg-[#4DA6FF] hover:brightness-110 px-4 py-2 text-white text-sm font-semibold shadow hover:shadow-lg transition'>Login</button>
+              <button onClick={() => navigate('/passenger/login')} className='rounded-full bg-brand-primary hover:brightness-110 px-4 py-2 text-white text-sm font-semibold shadow-theme-sm hover:shadow-theme-md transition'>Login</button>
             ) : (
               <>
-                <button onClick={() => setIsDropdownOpen((o) => !o)} className='relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center font-bold text-white shadow focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4DA6FF] border-2 border-white/20 hover:border-white/30 transition-all duration-300'>
+                <button onClick={() => setIsDropdownOpen((o) => !o)} className='relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center font-bold text-white shadow-theme-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-brand-primary border-2 border-theme-border-base hover:border-theme-border-subtle transition-all duration-300'>
                   {profileData?.profilePic ? (
                     <img 
                       src={`http://localhost:3000${profileData.profilePic}`} 
@@ -241,7 +242,7 @@ const Navbar = () => {
                       }}
                     />
                   ) : null}
-                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
+                  <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-primary to-brand-secondary ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
                     {String(passenger?.firstname || passenger?.firstName || '?').charAt(0).toUpperCase()}
                   </div>
                 </button>
@@ -252,14 +253,14 @@ const Navbar = () => {
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.95, y: -4 }}
                       transition={{ duration: 0.15 }}
-                      className='absolute right-0 top-12 w-64 rounded-2xl border border-white/10 bg-[#1A1A1A]/95 backdrop-blur-md text-white shadow-[0_8px_30px_rgba(0,0,0,0.35)] overflow-hidden'
+                      className='absolute right-0 top-12 w-64 rounded-2xl border border-theme-base bg-theme-surface-elevated/95 backdrop-theme text-theme-primary shadow-theme-xl overflow-hidden'
                     >
                       {/* User info header */}
-                      <div className='px-4 py-3 border-b border-white/10 bg-gradient-to-r from-[#4DA6FF]/10 via-[#EFBFFF]/10 to-[#7CE7E1]/10'>
+                      <div className='px-4 py-3 border-b border-theme-base bg-gradient-to-r from-brand-primary/10 via-brand-secondary/10 to-brand-aqua/10'>
                         {/* Profile Picture and User Info */}
                         <div className='flex items-center gap-3 mb-2'>
                           {/* Profile Picture in Dropdown */}
-                          <div className='relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center font-bold text-white shadow-lg border-2 border-white/20'>
+                          <div className='relative w-12 h-12 rounded-full overflow-hidden bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center font-bold text-white shadow-theme-md border-2 border-theme-border-base'>
                             {profileData?.profilePic ? (
                               <img 
                                 src={`http://localhost:3000${profileData.profilePic}`} 
@@ -271,7 +272,7 @@ const Navbar = () => {
                                 }}
                               />
                             ) : null}
-                            <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] text-lg ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
+                            <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-primary to-brand-secondary text-lg ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
                               {String(passenger?.firstname || passenger?.firstName || '?').charAt(0).toUpperCase()}
                             </div>
                           </div>
@@ -281,7 +282,7 @@ const Navbar = () => {
                             <p className='text-sm font-semibold' style={{ fontFamily: 'Inter, system-ui' }}>
                               {passenger?.firstname || passenger?.firstName || 'User'}
                             </p>
-                            <p className='text-xs text-gray-300' style={{ fontFamily: 'Inter, system-ui' }}>
+                            <p className='text-xs text-theme-secondary' style={{ fontFamily: 'Inter, system-ui' }}>
                               {passenger?.email || 'user@example.com'}
                             </p>
                           </div>
@@ -289,7 +290,7 @@ const Navbar = () => {
                         
                         {/* Verification Status */}
                         {!isVerified && (
-                          <div className='inline-flex items-center gap-1 px-2 py-1 rounded-full bg-yellow-500/20 text-yellow-300'>
+                          <div className='inline-flex items-center gap-1 px-2 py-1 rounded-full bg-warning/20 text-warning'>
                             <span className='text-xs'>⚠️</span>
                             <span className='text-xs font-medium'>Unverified</span>
                           </div>
@@ -300,10 +301,10 @@ const Navbar = () => {
                       <div className='py-2'>
                         <button 
                           onClick={() => { setIsDropdownOpen(false); navigate('/passenger/profile') }} 
-                          className='w-full text-left px-4 py-3 text-sm hover:bg-white/5 transition-colors flex items-center gap-3'
+                          className='w-full text-left px-4 py-3 text-sm hover:bg-theme-surface transition-colors flex items-center gap-3'
                           style={{ fontFamily: 'Inter, system-ui' }}
                         >
-                          <svg className='w-4 h-4 text-[#4DA6FF]' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <svg className='w-4 h-4 text-brand-primary' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                             <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
                           </svg>
                           <span>Profile</span>
@@ -313,10 +314,10 @@ const Navbar = () => {
                           <button 
                             disabled={isActionLoading} 
                             onClick={handleSendVerificationOtp} 
-                            className='w-full text-left px-4 py-3 text-sm hover:bg-white/5 disabled:opacity-60 transition-colors flex items-center gap-3'
+                            className='w-full text-left px-4 py-3 text-sm hover:bg-theme-surface disabled:opacity-60 transition-colors flex items-center gap-3'
                             style={{ fontFamily: 'Inter, system-ui' }}
                           >
-                            <svg className='w-4 h-4 text-[#FFD65C]' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                            <svg className='w-4 h-4 text-brand-accent' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                               <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' />
                             </svg>
                             <span>Verify Account</span>
@@ -329,15 +330,15 @@ const Navbar = () => {
                           </button>
                         )}
                         
-                        <div className='h-px w-full bg-white/10 mx-4 my-2' />
+                        <div className='h-px w-full bg-theme-border-base mx-4 my-2' />
                         
                         <button 
                           disabled={isActionLoading} 
                           onClick={handleLogout} 
-                          className='w-full text-left px-4 py-3 text-sm hover:bg-red-500/10 hover:text-red-300 disabled:opacity-60 transition-colors flex items-center gap-3'
+                          className='w-full text-left px-4 py-3 text-sm hover:bg-error/10 hover:text-error disabled:opacity-60 transition-colors flex items-center gap-3'
                           style={{ fontFamily: 'Inter, system-ui' }}
                         >
-                          <svg className='w-4 h-4 text-red-400' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                          <svg className='w-4 h-4 text-error' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                             <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1' />
                           </svg>
                           <span>Logout</span>
@@ -352,7 +353,7 @@ const Navbar = () => {
           </div>
 
           {/* Mobile menu toggle */}
-          <button onClick={() => setMenuOpen(!menuOpen)} className='md:hidden rounded-lg border border-white/20 p-2'>
+          <button onClick={() => setMenuOpen(!menuOpen)} className='md:hidden rounded-lg border border-theme-border-base p-2'>
             <span className='sr-only'>Toggle menu</span>
             {menuOpen ? '✕' : '☰'}
           </button>
@@ -361,23 +362,23 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <div className='md:hidden border-t border-white/10 bg-[#1A1A1A]/90 backdrop-blur text-white'>
+        <div className='md:hidden border-t border-theme-border-base bg-theme-base/90 backdrop-theme text-theme-primary'>
           <div className='mx-auto max-w-screen-xl px-6 py-3 space-y-2'>
             {navItems.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleNavigation(item)}
-                className={`block w-full text-left rounded-lg px-3 py-2 text-sm ${active === item.id ? 'bg-white/5 text-white' : 'text-white/80 hover:text-white'}`}
+                className={`block w-full text-left rounded-lg px-3 py-2 text-sm ${active === item.id ? 'bg-theme-surface text-theme-primary' : 'text-theme-secondary hover:text-theme-primary'}`}
               >
                 {item.label}
               </button>
             ))}
             <div className='flex items-center gap-3 pt-2'>
               {!isPassengerAuth || !passenger ? (
-                <button onClick={() => { setMenuOpen(false); navigate('/passenger/login') }} className='rounded-full bg-[#4DA6FF] hover:brightness-110 px-4 py-2 text-white text-sm font-semibold shadow hover:shadow-lg transition'>Login</button>
+                <button onClick={() => { setMenuOpen(false); navigate('/passenger/login') }} className='rounded-full bg-brand-primary hover:brightness-110 px-4 py-2 text-white text-sm font-semibold shadow-theme-sm hover:shadow-theme-md transition'>Login</button>
               ) : (
                 <div className='relative w-full'>
-                  <button onClick={() => setIsDropdownOpen((o) => !o)} className='relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] flex items-center justify-center font-bold text-white shadow border-2 border-white/20'>
+                  <button onClick={() => setIsDropdownOpen((o) => !o)} className='relative w-8 h-8 rounded-full overflow-hidden bg-gradient-to-br from-brand-primary to-brand-secondary flex items-center justify-center font-bold text-white shadow-theme-sm border-2 border-theme-border-base'>
                     {profileData?.profilePic ? (
                       <img 
                         src={`http://localhost:3000${profileData.profilePic}`} 
@@ -389,7 +390,7 @@ const Navbar = () => {
                         }}
                       />
                     ) : null}
-                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-[#4DA6FF] to-[#EFBFFF] ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
+                    <div className={`w-full h-full flex items-center justify-center bg-gradient-to-br from-brand-primary to-brand-secondary ${profileData?.profilePic ? 'hidden' : 'flex'}`}>
                       {String(passenger?.firstname || passenger?.firstName || '?').charAt(0).toUpperCase()}
                     </div>
                   </button>
@@ -451,7 +452,7 @@ const Navbar = () => {
                             className='w-full text-left px-4 py-3 text-sm hover:bg-white/5 transition-colors flex items-center gap-3'
                             style={{ fontFamily: 'Inter, system-ui' }}
                           >
-                            <svg className='w-4 h-4 text-[#4DA6FF]' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
+                            <svg className='w-4 h-4 text-brand-primary' fill='none' stroke='currentColor' viewBox='0 0 24 24'>
                               <path strokeLinecap='round' strokeLinejoin='round' strokeWidth='2' d='M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z' />
                             </svg>
                             <span>Profile</span>

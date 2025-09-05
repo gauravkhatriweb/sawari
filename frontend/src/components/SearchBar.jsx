@@ -1,7 +1,49 @@
+/**
+ * SearchBar.jsx - Location Search Component
+ * 
+ * A sophisticated location search component with autocomplete functionality.
+ * Integrates with LocationIQ API for real-time location suggestions.
+ * Features debounced search, keyboard navigation, and error handling.
+ * 
+ * Key Features:
+ * - Real-time location search with autocomplete
+ * - Debounced API calls for performance
+ * - Keyboard navigation (arrow keys, Enter, Escape)
+ * - Error handling and loading states
+ * - Controlled and uncontrolled input modes
+ * - Accessibility support with ARIA attributes
+ * - Request cancellation to prevent race conditions
+ * - Smooth animations with Framer Motion
+ * - Focus management and click outside handling
+ * - Responsive design
+ * 
+ * Search Modes:
+ * - pickup: For selecting pickup locations
+ * - drop: For selecting drop-off locations
+ * 
+ * Usage:
+ * ```jsx
+ * <SearchBar
+ *   mode="drop"
+ *   placeholder="Where to?"
+ *   onLocationSelect={(location) => setDropLocation(location)}
+ *   value={searchValue}
+ *   onChange={(value) => setSearchValue(value)}
+ * />
+ * ```
+ */
+
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import '../styles/ZIndexLayers.css';
 
-// Custom debounce hook
+/**
+ * Custom debounce hook for optimizing API calls
+ * 
+ * @param {Function} callback - Function to debounce
+ * @param {number} delay - Delay in milliseconds
+ * @returns {Function} Debounced callback function
+ */
 const useDebounce = (callback, delay) => {
   const debounceRef = useRef();
 
@@ -15,6 +57,7 @@ const useDebounce = (callback, delay) => {
     [callback, delay]
   );
 
+  // Cleanup timeout on unmount
   useEffect(() => {
     return () => {
       if (debounceRef.current) {
@@ -26,21 +69,40 @@ const useDebounce = (callback, delay) => {
   return debouncedCallback;
 };
 
+/**
+ * SearchBar Component
+ * 
+ * Location search component with autocomplete and keyboard navigation.
+ * 
+ * @param {string} mode - Search mode ('pickup' or 'drop')
+ * @param {string} placeholder - Input placeholder text
+ * @param {Function} onLocationSelect - Callback when location is selected
+ * @param {boolean} disabled - Whether the input is disabled
+ * @param {string} className - Additional CSS classes
+ * @param {string} value - Controlled input value
+ * @param {Function} onChange - Controlled input change handler
+ * @param {Function} onFocus - Focus event handler
+ * @param {Function} onBlur - Blur event handler
+ */
 const SearchBar = ({ 
   mode = 'drop', // 'pickup' | 'drop'
   placeholder,
   onLocationSelect,
   disabled = false,
   className = '',
-  initialValue = ''
+  value = '', // Controlled input
+  onChange, // Controlled input handler
+  onFocus,
+  onBlur
 }) => {
-  const [value, setValue] = useState(initialValue);
+  // Component state
   const [suggestions, setSuggestions] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   
+  // Refs for DOM elements and API management
   const abortControllerRef = useRef(null);
   const inputRef = useRef(null);
   const dropdownRef = useRef(null);
@@ -52,7 +114,7 @@ const SearchBar = ({
 
   const displayPlaceholder = placeholder || defaultPlaceholder;
 
-  // Debounced search function
+  // Debounced search function (300-500ms as per requirements)
   const debouncedSearch = useDebounce(async (query) => {
     if (!query.trim() || query.length < 3) {
       setSuggestions([]);
@@ -81,9 +143,8 @@ const SearchBar = ({
       const response = await fetch(url.toString(), {
         signal: abortControllerRef.current.signal,
         headers: {
-          'User-Agent': 'Sawari App (sawari.pk)',
-          'Referer': window.location.origin,
-          'Accept-Language': navigator.language || 'en',
+          'User-Agent': 'Sawari-App/1.0',
+          'Referer': window.location.origin
         }
       });
 
@@ -124,13 +185,17 @@ const SearchBar = ({
   // Handle input change
   const handleInputChange = (e) => {
     const newValue = e.target.value;
-    setValue(newValue);
+    if (onChange) {
+      onChange(newValue);
+    }
     debouncedSearch(newValue);
   };
 
   // Handle suggestion selection
   const handleSelectSuggestion = (suggestion) => {
-    setValue(suggestion.label);
+    if (onChange) {
+      onChange(suggestion.label);
+    }
     setSuggestions([]);
     setIsOpen(false);
     setSelectedIndex(-1);
@@ -233,12 +298,14 @@ const SearchBar = ({
           value={value}
           onChange={handleInputChange}
           onKeyDown={handleKeyDown}
-          onFocus={() => {
-            if (suggestions.length > 0) {
-              setIsOpen(true);
-            }
+          onFocus={(e) => {
+            setIsOpen(true);
+            if (onFocus) onFocus(e);
           }}
-          placeholder={displayPlaceholder}
+          onBlur={(e) => {
+            if (onBlur) onBlur(e);
+          }}
+          placeholder={placeholder || `Enter ${mode} location`}
           disabled={disabled}
           className={`
             w-full pl-10 pr-12 py-3 
@@ -249,7 +316,7 @@ const SearchBar = ({
             disabled:opacity-50 disabled:cursor-not-allowed
             transition-all duration-200
           `}
-          aria-label={displayPlaceholder}
+          aria-label={`${mode} location search`}
           aria-expanded={isOpen}
           aria-haspopup="listbox"
           aria-autocomplete="list"
@@ -259,14 +326,16 @@ const SearchBar = ({
         {/* Loading/Clear Button */}
         <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
           {isLoading ? (
-            <svg className="w-5 h-5 text-[#4DA6FF] animate-spin" viewBox="0 0 24 24">
+            <svg className="w-5 h-5 text-brand-primary animate-spin" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
           ) : value ? (
             <button
               onClick={() => {
-                setValue('');
+                if (onChange) {
+                  onChange('');
+                }
                 setSuggestions([]);
                 setIsOpen(false);
                 inputRef.current?.focus();
@@ -291,7 +360,9 @@ const SearchBar = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="absolute top-full left-0 right-0 z-[1000] mt-2"
+            className="absolute top-full left-0 right-0 z-search-dropdown mt-2"
+            role="listbox"
+            aria-label="Location suggestions"
           >
             <div className="bg-[#1A1A1A]/95 backdrop-blur-xl border border-white/20 rounded-xl shadow-2xl overflow-hidden">
               {error ? (
@@ -331,11 +402,12 @@ const SearchBar = ({
                       className={`
                         px-4 py-3 cursor-pointer transition-colors border-b border-white/10 last:border-b-0
                         ${index === selectedIndex 
-                          ? 'bg-[#4DA6FF]/20 text-white' 
+                          ? 'bg-brand-primary/20 text-white' 
                           : 'text-gray-300 hover:bg-white/10 hover:text-white'
                         }
                       `}
                       onClick={() => handleSelectSuggestion(suggestion)}
+                      tabIndex={-1}
                     >
                       <div className="flex items-start gap-3">
                         <div className="mt-0.5 flex-shrink-0">

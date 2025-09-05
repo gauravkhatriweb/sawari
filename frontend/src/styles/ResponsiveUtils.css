@@ -1,0 +1,238 @@
+/* Responsive Utilities for Sawari App */
+/* This file provides consistent responsive behavior across components */
+
+/* Container utilities */
+.container-responsive {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+@media (min-width: 640px) {
+  .container-responsive {
+    padding: 0 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container-responsive {
+    padding: 0 2rem;
+  }
+}
+
+/* Touch target improvements for mobile */
+@media (hover: none) and (pointer: coarse) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  .button-touch {
+    padding: 12px 16px;
+    font-size: 16px;
+  }
+  
+  .input-touch {
+    padding: 12px 16px;
+    font-size: 16px;
+    line-height: 1.5;
+  }
+}
+
+/* Modal responsive behavior */
+.modal-responsive {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+@media (max-width: 768px) {
+  .modal-responsive {
+    align-items: flex-end;
+    padding: 0;
+  }
+  
+  .modal-content-responsive {
+    width: 100%;
+    max-height: 90vh;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+@media (min-width: 769px) {
+  .modal-content-responsive {
+    max-width: 500px;
+    border-radius: 1rem;
+  }
+}
+
+/* Search dropdown responsive positioning */
+.search-dropdown-responsive {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 0.5rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+@media (max-width: 768px) {
+  .search-dropdown-responsive {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    margin-top: 0;
+    max-height: 50vh;
+    border-radius: 1rem 1rem 0 0;
+  }
+}
+
+/* Map responsive behavior */
+.map-responsive {
+  width: 100%;
+  height: 70vh;
+  min-height: 320px;
+  border-radius: 0.75rem;
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .map-responsive {
+    height: 60vh;
+  }
+}
+
+@media (max-width: 768px) {
+  .map-responsive {
+    height: 50vh;
+    min-height: 280px;
+    border-radius: 0.5rem;
+  }
+}
+
+/* Button responsive sizing */
+.btn-responsive {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  border-radius: 0.5rem;
+  transition: all 0.2s ease;
+}
+
+@media (max-width: 768px) {
+  .btn-responsive {
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    border-radius: 0.75rem;
+  }
+}
+
+/* Text responsive sizing */
+.text-responsive-sm {
+  font-size: 0.875rem;
+}
+
+.text-responsive-base {
+  font-size: 1rem;
+}
+
+.text-responsive-lg {
+  font-size: 1.125rem;
+}
+
+.text-responsive-xl {
+  font-size: 1.25rem;
+}
+
+@media (max-width: 768px) {
+  .text-responsive-sm {
+    font-size: 1rem;
+  }
+  
+  .text-responsive-base {
+    font-size: 1.1rem;
+  }
+  
+  .text-responsive-lg {
+    font-size: 1.25rem;
+  }
+  
+  .text-responsive-xl {
+    font-size: 1.5rem;
+  }
+}
+
+/* Spacing responsive utilities */
+.spacing-responsive-sm {
+  padding: 0.5rem;
+}
+
+.spacing-responsive-md {
+  padding: 1rem;
+}
+
+.spacing-responsive-lg {
+  padding: 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .spacing-responsive-sm {
+    padding: 0.75rem;
+  }
+  
+  .spacing-responsive-md {
+    padding: 1.25rem;
+  }
+  
+  .spacing-responsive-lg {
+    padding: 2rem;
+  }
+}
+
+/* Safe area handling for mobile devices */
+@supports (padding: max(0px)) {
+  .safe-area-inset-top {
+    padding-top: max(1rem, env(safe-area-inset-top));
+  }
+  
+  .safe-area-inset-bottom {
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+  
+  .safe-area-inset-left {
+    padding-left: max(1rem, env(safe-area-inset-left));
+  }
+  
+  .safe-area-inset-right {
+    padding-right: max(1rem, env(safe-area-inset-right));
+  }
+}
+
+/* Accessibility improvements */
+@media (prefers-reduced-motion: reduce) {
+  .motion-safe {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .contrast-adaptive {
+    border-width: 2px;
+    font-weight: 600;
+  }
+}
+
+/* Focus visible improvements */
+.focus-visible-enhanced:focus-visible {
+  outline: 2px solid #4DA6FF;
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}

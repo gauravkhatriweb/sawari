@@ -84,10 +84,13 @@
   }
 }
 
+/* Import responsive utilities and z-index management */
+@import './styles/ZIndexLayers.css';
+@import './styles/ResponsiveUtils.css';
+
 /* SearchBar Focus Improvements */
 .search-container {
   position: relative;
-  z-index: 1000;
 }
 
 /* Mobile Touch Improvements */

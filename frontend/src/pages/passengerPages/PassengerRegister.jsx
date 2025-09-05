@@ -94,25 +94,25 @@ const PassengerRegister = () => {
   }
 
   return (
-    <div className='relative min-h-screen w-full bg-[#1A1A1A] text-white overflow-hidden'>
+    <div className='relative min-h-screen w-full bg-theme-base text-theme-primary overflow-hidden'>
       {/* Ambient gradient orbs */}
-      <div className='pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-[#4DA6FF] via-[#EFBFFF] to-[#FFD65C] blur-3xl opacity-30' />
-      <div className='pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-gradient-to-tr from-[#7CE7E1] via-[#4DA6FF] to-[#EFBFFF] blur-3xl opacity-25' />
+      <div className='pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-gradient-to-br from-brand-primary via-brand-secondary to-brand-accent blur-3xl opacity-30' />
+      <div className='pointer-events-none absolute -bottom-24 -right-24 h-80 w-80 rounded-full bg-gradient-to-tr from-brand-tertiary via-brand-primary to-brand-secondary blur-3xl opacity-25' />
 
       <main className='relative z-10 flex min-h-screen items-center justify-center px-6'>
         <section className='w-full max-w-md'>
           <div className='mb-4 flex items-center justify-center'>
-            <div className='inline-flex items-center justify-center rounded-2xl p-[2px] bg-gradient-to-r from-[#4DA6FF] via-[#EFBFFF] to-[#7CE7E1]'>
-              <div className='rounded-2xl bg-[#1A1A1A] p-3'>
+            <div className='inline-flex items-center justify-center rounded-2xl p-[2px] bg-gradient-to-r from-brand-primary via-brand-secondary to-brand-tertiary'>
+              <div className='rounded-2xl bg-theme-base p-3'>
                 <img src={logo} alt='Sawari.pk logo' className='h-9 w-9' />
               </div>
             </div>
           </div>
 
-          <div className='rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.35)]'>
+          <div className='rounded-2xl glass-border glass-bg p-6 sm:p-8 backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.35)]'>
             <div className='text-center'>
               <h1 className='text-2xl sm:text-3xl font-bold tracking-tight'>Create your account</h1>
-              <p className='mt-1 text-sm text-gray-300'>Join Sawari.pk and ride smarter.</p>
+              <p className='mt-1 text-sm text-theme-secondary'>Join Sawari.pk and ride smarter.</p>
             </div>
 
             <form onSubmit={handleSubmit} className='mt-6 space-y-4'>
@@ -120,7 +120,7 @@ const PassengerRegister = () => {
                 <div>
                   <label htmlFor='firstName' className='block text-sm font-medium mb-1'>First name</label>
                   <div className='relative'>
-                    <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500'>
+                    <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted'>
                       {/* user icon */}
                       <svg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
                         <circle cx='12' cy='8' r='3.5' stroke='currentColor' strokeWidth='1.5'/>
@@ -133,14 +133,14 @@ const PassengerRegister = () => {
                       value={firstName}
                       onChange={(e) => setFirstName(e.target.value)}
                       placeholder='First name'
-                      className='w-full rounded-xl border border-white/10 bg-[#111111] pl-10 pr-4 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent'
+                      className='w-full rounded-xl glass-border bg-theme-surface pl-10 pr-4 py-3 text-sm placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent'
                     />
                   </div>
                 </div>
                 <div>
                   <label htmlFor='lastName' className='block text-sm font-medium mb-1'>Last name (optional)</label>
                   <div className='relative'>
-                    <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500'>
+                    <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted'>
                       {/* user icon */}
                       <svg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
                         <circle cx='12' cy='8' r='3.5' stroke='currentColor' strokeWidth='1.5'/>
@@ -153,7 +153,7 @@ const PassengerRegister = () => {
                       value={lastName}
                       onChange={(e) => setLastName(e.target.value)}
                       placeholder='Last name (optional)'
-                      className='w-full rounded-xl border border-white/10 bg-[#111111] pl-10 pr-4 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent'
+                      className='w-full rounded-xl glass-border bg-theme-surface pl-10 pr-4 py-3 text-sm placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent'
                     />
                   </div>
                 </div>
@@ -162,7 +162,7 @@ const PassengerRegister = () => {
               <div>
                 <label htmlFor='email' className='block text-sm font-medium mb-1'>Email</label>
                 <div className='relative'>
-                  <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500'>
+                  <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted'>
                     {/* mail icon */}
                     <svg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
                       <path d='M4 6.5C4 5.67157 4.67157 5 5.5 5H18.5C19.3284 5 20 5.67157 20 6.5V17.5C20 18.3284 19.3284 19 18.5 19H5.5C4.67157 19 4 18.3284 4 17.5V6.5Z' stroke='currentColor' strokeWidth='1.5'/>
@@ -175,7 +175,7 @@ const PassengerRegister = () => {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder='you@example.com'
-                    className='w-full rounded-xl border border-white/10 bg-[#111111] pl-10 pr-4 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent'
+                    className='w-full rounded-xl glass-border bg-theme-surface pl-10 pr-4 py-3 text-sm placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent'
                   />
                 </div>
               </div>
@@ -184,7 +184,7 @@ const PassengerRegister = () => {
               <div>
                 <label htmlFor='password' className='block text-sm font-medium mb-1'>Password</label>
                 <div className='relative'>
-                  <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500'>
+                  <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted'>
                     {/* lock icon */}
                     <svg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
                       <rect x='4.75' y='10' width='14.5' height='9.5' rx='2.25' stroke='currentColor' strokeWidth='1.5'/>
@@ -197,12 +197,12 @@ const PassengerRegister = () => {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder='Create a password'
-                    className='w-full rounded-xl border border-white/10 bg-[#111111] pl-10 pr-12 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent'
+                    className='w-full rounded-xl glass-border bg-theme-surface pl-10 pr-12 py-3 text-sm placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent'
                   />
                   <button
                     type='button'
                     onClick={() => setShowPassword(!showPassword)}
-                    className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-300 hover:text-white'
+                    className='absolute right-3 top-1/2 -translate-y-1/2 text-xs text-theme-secondary hover:text-theme-primary'
                     aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
                     {showPassword ? 'Hide' : 'Show'}
@@ -213,7 +213,7 @@ const PassengerRegister = () => {
               <div>
                 <label htmlFor='confirmPassword' className='block text-sm font-medium mb-1'>Confirm password</label>
                 <div className='relative'>
-                  <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500'>
+                  <span className='pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-theme-muted'>
                     {/* lock icon */}
                     <svg width='18' height='18' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
                       <rect x='4.75' y='10' width='14.5' height='9.5' rx='2.25' stroke='currentColor' strokeWidth='1.5'/>
@@ -226,7 +226,7 @@ const PassengerRegister = () => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder='Re-enter your password'
-                    className='w-full rounded-xl border border-white/10 bg-[#111111] pl-10 pr-12 py-3 text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#4DA6FF] focus:border-transparent'
+                    className='w-full rounded-xl glass-border bg-theme-surface pl-10 pr-12 py-3 text-sm placeholder-theme-muted focus:outline-none focus:ring-2 focus:ring-brand-primary focus:border-transparent'
                   />
                 </div>
               </div>
@@ -240,19 +240,19 @@ const PassengerRegister = () => {
               <button
                 type='submit'
                 disabled={isSubmitting}
-                className={`mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-sm sm:text-base font-bold text-white shadow-[0_8px_30px_rgb(0,0,0,0.35)] ring-1 ring-white/10 transition-[transform,background-color,opacity] duration-200 hover:scale-[1.01] active:scale-[0.99] ${isSubmitting ? 'bg-black/70 opacity-75' : 'bg-black'}`}
+                className={`mt-2 inline-flex w-full items-center justify-center rounded-full px-6 py-3 text-sm sm:text-base font-bold text-theme-primary shadow-[0_8px_30px_rgb(0,0,0,0.35)] glass-border transition-[transform,background-color,opacity] duration-200 hover:scale-[1.01] active:scale-[0.99] ${isSubmitting ? 'bg-black/70 opacity-75' : 'bg-black'}`}
               >
                 {isSubmitting ? 'Registering...' : 'Create account'}
               </button>
 
-              <div className='mt-3 flex items-center justify-between text-xs text-gray-300'>
+              <div className='mt-3 flex items-center justify-between text-xs text-theme-secondary'>
                 <span>Already have an account?</span>
-                <Link to='/passenger/login' className='font-medium text-white'>Log in</Link>
+                <Link to='/passenger/login' className='font-medium text-theme-primary'>Log in</Link>
               </div>
             </form>
           </div>
 
-          <div className='mt-6 text-center text-xs text-gray-400'>
+          <div className='mt-6 text-center text-xs text-theme-muted'>
             By creating an account, you agree to our
             <Link to='/legal/terms' className='mx-1 underline decoration-white/40 hover:decoration-white'> Terms</Link>
             and

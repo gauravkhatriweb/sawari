@@ -60,7 +60,6 @@ const Home = () => {
   }, [])
 
   const baseWrap = 'bg-[#0B0B0B] text-white min-h-screen'
-
   const scrollTo = (id) => {
     const el = document.getElementById(id)
     if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -119,7 +118,7 @@ const Home = () => {
           Affordable, safe, and always on time.
         </motion.p>
         <div className='mt-8 flex flex-col sm:flex-row items-center justify-center gap-3'>
-          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} onClick={() => navigate('/passenger/register')} className='rounded-full bg-[#4DA6FF] hover:brightness-110 px-6 py-3 text-white font-semibold shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4DA6FF]'>Book a Ride</motion.button>
+          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} onClick={() => navigate('/passenger/book')} className='rounded-full bg-[#4DA6FF] hover:brightness-110 px-6 py-3 text-white font-semibold shadow hover:shadow-lg transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#4DA6FF]'>Book a Ride</motion.button>
           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} onClick={() => navigate('/captain/register')} className='rounded-full border border-white/20 px-6 py-3 text-white font-semibold hover:bg-white/10 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-white/40'>Drive with Us</motion.button>
         </div>
         {/* Hero illustration removed per request */}
