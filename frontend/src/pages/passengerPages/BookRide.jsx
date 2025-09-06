@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
 import LiveMap from '../../components/LiveMap'
-import AddressSearchInput from '../../components/AddressSearchInput'
+import EnhancedSearchBar from '../../components/EnhancedSearchBar'
 import useCurrentLocation from '../../customHooks/useCurrentLocation'
 import RideOptionsCarousel from '../../components/RideOptionsCarousel'
 import FareBreakdownCard from '../../components/FareBreakdownCard'
@@ -15,7 +15,10 @@ import NetworkStatus, { useNetworkStatus } from '../../components/NetworkStatus'
 import LocationErrorHandler from '../../components/LocationErrorHandler'
 import BookFlowLoadingState from '../../components/book-flow/ui/BookFlowLoadingState'
 import BookFlowErrorBoundary from '../../components/book-flow/ui/BookFlowErrorBoundary'
+import DirectionsErrorFallback from '../../components/DirectionsErrorFallback'
+import DirectionsLoadingFallback from '../../components/DirectionsLoadingFallback'
 import { getRouteDistance, isLocationInPakistan } from '../../services/locationiq'
+import { getDirections, formatRouteDuration, formatRouteDistance } from '../../services/directions'
 import { calculateAllFares, getAllVehicleConfigs } from '../../utils/fareCalculator'
 
 const STEPS = {
@@ -37,6 +40,7 @@ const BookRide = () => {
     loading: locationLoading,
     error: locationError,
     address: reverseAddress,
+    userCity: detectedUserCity,
     retry: retryLocation,
     getCurrentPosition
   } = useCurrentLocation()
@@ -69,6 +73,12 @@ const BookRide = () => {
   // Fare calculation state
   const [distanceKm, setDistanceKm] = useState(0)
   const [durationMin, setDurationMin] = useState(0)
+  
+  // Route state for multi-route display
+  const [routes, setRoutes] = useState([])
+  const [selectedRouteId, setSelectedRouteId] = useState(null)
+  const [isLoadingRoutes, setIsLoadingRoutes] = useState(false)
+  const [routeError, setRouteError] = useState(null)
   
   // Get vehicle configurations
   const vehicleConfigs = useMemo(() => getAllVehicleConfigs(), [])
@@ -168,14 +178,18 @@ const BookRide = () => {
 
   // Extract user's current city for validation
   useEffect(() => {
-    if (reverseAddress && reverseAddress.city) {
+    if (detectedUserCity) {
+      setUserCity(detectedUserCity)
+    } else if (reverseAddress && reverseAddress.city) {
       setUserCity(reverseAddress.city)
     }
-  }, [reverseAddress])
+  }, [detectedUserCity, reverseAddress])
 
-  // Real-time distance and fare calculation
-  const calculateDistanceAndFare = useCallback(async (pickupCoords, dropCoords) => {
+  // Debounced directions fetching
+  const fetchDirections = useCallback(async (pickupCoords, dropCoords, signal) => {
     if (!pickupCoords || !dropCoords) {
+      setRoutes([])
+      setSelectedRouteId(null)
       setDistanceKm(0)
       setDurationMin(0)
       setRoutePolyline(null)
@@ -192,55 +206,68 @@ const BookRide = () => {
         position: 'top-center',
         autoClose: 4000
       })
-      setFareError('Service area restricted')
+      setRouteError('Service area restricted')
       return
     }
 
+    setIsLoadingRoutes(true)
+    setRouteError(null)
     setIsCalculatingFare(true)
     setFareError(null)
 
     try {
-      // Get route distance from LocationIQ
-      const routeData = await getRouteDistance(
-        pickupCoords,
-        dropCoords
-      )
-
-      // Handle both successful API calls and fallback scenarios
-      setDistanceKm(routeData.distance)
-      setDurationMin(routeData.duration)
-      setRoutePolyline(routeData.polyline)
+      // Convert coordinates to the format expected by directions service
+      const pickup = { lat: pickupCoords.lat, lon: pickupCoords.lng || pickupCoords.lon }
+      const drop = { lat: dropCoords.lat, lon: dropCoords.lng || dropCoords.lon }
       
-      // Calculate fares for all vehicles
-      const fares = calculateAllFares({
-        distanceKm: routeData.distance,
-        durationMin: routeData.duration,
-        includeSurge: false
-      })
+      // Fetch multiple routes from directions API
+      const fetchedRoutes = await getDirections(pickup, drop, { signal, alternatives: true })
       
-      setAllVehicleFares(fares)
-      setCalculatedFare(fares[selectedRide]?.breakdown?.total || null)
+      if (signal?.aborted) return
       
-      // Show appropriate user feedback based on result
-      if (routeData.fallback) {
-        // Show informative message for fallback scenarios
-        const message = routeData.userMessage || 'Using estimated distance and duration'
-        toast.info(message, {
-          position: 'top-center',
-          autoClose: 4000,
-          toastId: 'fallback-notification'
+      setRoutes(fetchedRoutes)
+      
+      // Select the first route by default
+      const defaultRoute = fetchedRoutes[0]
+      if (defaultRoute) {
+        setSelectedRouteId(defaultRoute.id)
+        
+        // Update distance and duration from selected route
+        const distanceKm = defaultRoute.distance / 1000 // Convert meters to km
+        const durationMin = defaultRoute.duration / 60 // Convert seconds to minutes
+        
+        setDistanceKm(distanceKm)
+        setDurationMin(durationMin)
+        setRoutePolyline(defaultRoute.geometry)
+        
+        // Calculate fares for all vehicles using route distance
+        const fares = calculateAllFares({
+          distanceKm,
+          durationMin,
+          includeSurge: false
         })
-        setFareError(`Estimated: ${routeData.userMessage || 'Using fallback calculation'}`)
-      } else {
-        // Clear any previous errors on successful API call
-        setFareError(null)
+        
+        setAllVehicleFares(fares)
+        setCalculatedFare(fares[selectedRide]?.breakdown?.total || null)
+        
+        // Show user feedback for fallback routes
+        if (defaultRoute.isFallback) {
+          toast.info('Using estimated route due to limited data', {
+            position: 'top-center',
+            autoClose: 4000,
+            toastId: 'fallback-route'
+          })
+          setRouteError('Estimated route')
+        }
       }
       
     } catch (error) {
-      console.error('Distance calculation failed:', error)
+      if (signal?.aborted) return
+      
+      console.error('Directions fetch failed:', error)
       
       // Enhanced error handling with user-friendly messages
-      let userMessage = 'Unable to calculate fare. Please try again.'
+      let userMessage = 'Unable to fetch routes. Please try again.'
       
       if (error.message?.includes('cancelled')) {
         userMessage = 'Request was cancelled. Please try again.'
@@ -248,24 +275,70 @@ const BookRide = () => {
         userMessage = 'Network issue. Please check your connection and try again.'
       } else if (error.message?.includes('rate limit')) {
         userMessage = 'Too many requests. Please wait a moment and try again.'
+      } else if (error.message?.includes('No route found')) {
+        userMessage = 'No route found between these locations. Please try different addresses.'
       }
       
-      setFareError(error.message)
       toast.error(userMessage, {
         position: 'top-center',
         autoClose: 5000
       })
+      
+      setRouteError(userMessage)
+      setRoutes([])
+      setSelectedRouteId(null)
+      setDistanceKm(0)
+      setDurationMin(0)
+      setRoutePolyline(null)
+      setAllVehicleFares({})
+      setCalculatedFare(null)
+      
     } finally {
+      setIsLoadingRoutes(false)
       setIsCalculatingFare(false)
     }
   }, [selectedRide])
 
-  // Trigger fare calculation when locations change
+  // Debounced directions fetching with AbortController
   useEffect(() => {
-    if (pickup && drop) {
-      calculateDistanceAndFare(pickup, drop)
+    if (!pickup || !drop) return
+    
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => {
+      fetchDirections(pickup, drop, controller.signal)
+    }, 300) // 300ms debounce
+    
+    return () => {
+      clearTimeout(timeoutId)
+      controller.abort()
     }
-  }, [pickup, drop, calculateDistanceAndFare])
+  }, [pickup, drop, fetchDirections])
+  // Handle route selection
+  const handleRouteSelect = useCallback((routeId) => {
+    const selectedRoute = routes.find(route => route.id === routeId)
+    if (!selectedRoute) return
+    
+    setSelectedRouteId(routeId)
+    
+    // Update distance and duration from selected route
+    const distanceKm = selectedRoute.distance / 1000 // Convert meters to km
+    const durationMin = selectedRoute.duration / 60 // Convert seconds to minutes
+    
+    setDistanceKm(distanceKm)
+    setDurationMin(durationMin)
+    setRoutePolyline(selectedRoute.geometry)
+    
+    // Recalculate fares for all vehicles using new route distance
+    const fares = calculateAllFares({
+      distanceKm,
+      durationMin,
+      includeSurge: false
+    })
+    
+    setAllVehicleFares(fares)
+    setCalculatedFare(fares[selectedRide]?.breakdown?.total || null)
+  }, [routes, selectedRide])
+
   // Get current ride fare from calculated fares
   const currentRideFare = useMemo(() => {
     if (allVehicleFares[selectedRide]) {
@@ -419,6 +492,21 @@ const BookRide = () => {
     }
   }
 
+  const getHelpText = () => {
+    if (currentStep === STEPS.PICKUP && pickupValidationError) {
+      return pickupValidationError.message
+    }
+    
+    const helpMessages = {
+      [STEPS.PICKUP]: 'Please select a pickup location to continue',
+      [STEPS.DROP]: 'Please select a destination to continue',
+      [STEPS.VEHICLE]: 'Please choose a vehicle to continue',
+      [STEPS.PAYMENT]: 'Please select a payment method to continue'
+    }
+    
+    return helpMessages[currentStep] || ''
+  }
+
   const canAdvance = () => {
     switch (currentStep) {
       case STEPS.PICKUP: return !!pickup
@@ -540,7 +628,9 @@ const BookRide = () => {
         <LiveMap 
           pickup={pickup ? { ...pickup, label: pickupLabel } : null} 
           drop={drop ? { ...drop, label: dropLabel } : null} 
-          routePolyline={routePolyline}
+          routes={routes}
+          selectedRouteId={selectedRouteId}
+          onRouteSelect={handleRouteSelect}
           className="w-full h-full"
         />
         
@@ -573,6 +663,179 @@ const BookRide = () => {
         
         {/* Recenter functionality is handled by LiveMap component's built-in recenter button */}
       </div>
+
+      {/* Route Selection Cards */}
+      <AnimatePresence>
+        {routes.length > 1 && (
+          <motion.div 
+            className="absolute bottom-4 left-4 right-4 lg:right-[42%] z-30"
+            initial={{ opacity: 0, y: 50, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 50, scale: 0.95 }}
+            transition={{ 
+              duration: 0.4, 
+              ease: [0.4, 0, 0.2, 1],
+              delay: 0.2
+            }}
+          >
+            <motion.div 
+              className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-[0_8px_30px_rgba(0,0,0,0.25)]"
+              initial={{ backdropFilter: 'blur(0px)' }}
+              animate={{ backdropFilter: 'blur(24px)' }}
+              transition={{ duration: 0.3 }}
+            >
+              <motion.h3 
+                className="text-white font-medium mb-3 font-inter text-sm"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.3, duration: 0.3 }}
+              >
+                Choose Route ({routes.length} options)
+              </motion.h3>
+              <div className="space-y-2 max-h-32 overflow-y-auto">
+                <AnimatePresence mode="popLayout">
+                  {routes.map((route, index) => {
+                    const isSelected = route.id === selectedRouteId
+                    const distanceText = formatRouteDistance(route.distance)
+                    const durationText = formatRouteDuration(route.duration)
+                    
+                    return (
+                      <motion.button
+                        key={route.id}
+                        onClick={() => handleRouteSelect(route.id)}
+                        className={`w-full p-3 rounded-xl text-left relative overflow-hidden ${
+                          isSelected 
+                            ? 'bg-gradient-to-r from-[#4DA6FF]/20 via-[#EFBFFF]/20 to-[#7CE7E1]/20 border border-[#4DA6FF]/30 shadow-[0_4px_20px_rgba(77,166,255,0.2)]' 
+                            : 'bg-white/5 border border-white/10 hover:bg-white/10 hover:border-white/20'
+                        }`}
+                        initial={{ opacity: 0, x: -30, scale: 0.95 }}
+                        animate={{ 
+                          opacity: 1, 
+                          x: 0, 
+                          scale: isSelected ? 1.02 : 1,
+                          boxShadow: isSelected 
+                            ? '0 4px 20px rgba(77, 166, 255, 0.2)' 
+                            : '0 2px 8px rgba(0, 0, 0, 0.1)'
+                        }}
+                        exit={{ opacity: 0, x: -30, scale: 0.95 }}
+                        transition={{ 
+                          duration: 0.3, 
+                          delay: index * 0.1,
+                          ease: [0.4, 0, 0.2, 1]
+                        }}
+                        whileHover={{ 
+                          scale: isSelected ? 1.02 : 1.01,
+                          transition: { duration: 0.2 }
+                        }}
+                        whileTap={{ scale: 0.98 }}
+                        layout
+                      >
+                        {/* Selection ripple effect */}
+                        {isSelected && (
+                          <motion.div
+                            className="absolute inset-0 bg-gradient-to-r from-[#4DA6FF]/10 via-[#EFBFFF]/10 to-[#7CE7E1]/10 rounded-xl"
+                            initial={{ scale: 0, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.4, ease: 'easeOut' }}
+                          />
+                        )}
+                        
+                        <div className="flex items-center justify-between relative z-10">
+                          <div className="flex items-center space-x-3">
+                            <motion.div 
+                              className={`w-2 h-2 rounded-full ${
+                                isSelected ? 'bg-[#4DA6FF]' : 'bg-white/40'
+                              }`}
+                              animate={{
+                                scale: isSelected ? [1, 1.3, 1] : 1,
+                                boxShadow: isSelected 
+                                  ? '0 0 8px rgba(77, 166, 255, 0.6)' 
+                                  : '0 0 0px rgba(255, 255, 255, 0)'
+                              }}
+                              transition={{ 
+                                duration: 0.3,
+                                scale: { repeat: isSelected ? Infinity : 0, repeatDelay: 2 }
+                              }}
+                            />
+                            <div>
+                              <motion.div 
+                                className="text-white font-medium text-sm font-inter"
+                                animate={{ 
+                                  color: isSelected ? '#4DA6FF' : '#ffffff'
+                                }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                Route {index + 1}
+                                {route.isFallback && (
+                                  <motion.span 
+                                    className="ml-2 text-xs text-yellow-400"
+                                    initial={{ opacity: 0, scale: 0.8 }}
+                                    animate={{ opacity: 1, scale: 1 }}
+                                    transition={{ delay: 0.2 }}
+                                  >
+                                    (Est.)
+                                  </motion.span>
+                                )}
+                              </motion.div>
+                              <motion.div 
+                                className="text-white/70 text-xs font-inter"
+                                initial={{ opacity: 0, y: 5 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.1 }}
+                              >
+                                {distanceText} • {durationText}
+                              </motion.div>
+                            </div>
+                          </div>
+                          <AnimatePresence>
+                            {isSelected && (
+                              <motion.div 
+                                className="text-[#4DA6FF] text-xs font-medium flex items-center space-x-1"
+                                initial={{ opacity: 0, scale: 0.8, x: 10 }}
+                                animate={{ opacity: 1, scale: 1, x: 0 }}
+                                exit={{ opacity: 0, scale: 0.8, x: 10 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <motion.div
+                                  className="w-1 h-1 bg-[#4DA6FF] rounded-full"
+                                  animate={{ scale: [1, 1.5, 1] }}
+                                  transition={{ 
+                                    duration: 1.5, 
+                                    repeat: Infinity,
+                                    ease: 'easeInOut'
+                                  }}
+                                />
+                                <span>Selected</span>
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                      </motion.button>
+                    )
+                  })}
+                </AnimatePresence>
+               </div>
+               <DirectionsLoadingFallback
+                 isLoading={isLoadingRoutes}
+                 pickup={pickup}
+                 drop={drop}
+                 className="py-2"
+               />
+               {routeError && (
+                 <DirectionsErrorFallback
+                   error={routeError}
+                   onRetry={() => {
+                     if (pickup && drop) {
+                       fetchDirections(pickup, drop)
+                     }
+                   }}
+                   className="mt-2"
+                 />
+               )}
+             </motion.div>
+           </motion.div>
+         )}
+       </AnimatePresence>
 
       {/* Stepper Section */}
       <div className="relative lg:fixed lg:top-0 lg:right-0 lg:w-2/5 lg:h-full lg:overflow-y-auto bg-black/80 backdrop-blur-xl lg:border-l border-white/10 z-20 shadow-[0_8px_30px_rgba(0,0,0,0.25)] min-h-[55vh] sm:min-h-[50vh] md:min-h-[45vh] lg:min-h-full">
@@ -692,58 +955,50 @@ const BookRide = () => {
               {currentStep === STEPS.PICKUP && (
                 <fieldset className="space-y-4">
                   <legend className="sr-only">Pickup Location Selection</legend>
-                  <AddressSearchInput
-                    id="pickup-search"
-                    label="Pickup Location"
-                    placeholder="Search for pickup location..."
-                    value={pickupLabel}
-                    onLocationSelect={handlePickupLocationSelect}
-                    onInputChange={setPickupLabel}
-                    disabled={isFeatureDisabled('search')}
-                    className="w-full"
-                    error={errors.pickup}
-                    required={true}
-                    icon={
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    }
-                  />
-                  
-                  {/* Current Location Button */}
-                  {coords.lat && coords.lon && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const locationData = {
-                          lat: coords.lat,
-                          lon: coords.lon,
-                          address: reverseAddress?.label || `GPS Location (${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)})`,
-                          displayName: reverseAddress?.label || `GPS Location (${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)})`,
-                          displayPlace: 'Current Location',
-                          displayAddress: reverseAddress?.label || ''
-                        }
-                        handlePickupLocationSelect(locationData)
+                  <div className="space-y-2">
+                    <label htmlFor="pickup-search" className="block text-sm font-medium text-theme-primary">
+                      Pickup Location {errors.pickup && <span className="text-error">*</span>}
+                    </label>
+                    <EnhancedSearchBar
+                      mode="pickup"
+                      placeholder="Search for pickup location..."
+                      value={pickupLabel}
+                      onChange={setPickupLabel}
+                      onLocationSelect={(location) => {
+                        handlePickupLocationSelect({
+                          lat: location.lat,
+                          lon: location.lon,
+                          address: location.label,
+                          displayName: location.label,
+                          displayPlace: location.enhancedLabel || location.label,
+                          displayAddress: location.address?.road || ''
+                        })
                       }}
-                      disabled={locationLoading || isFeatureDisabled('search')}
-                      className="w-full flex items-center justify-center px-4 py-3 bg-black/80 backdrop-blur-xl border border-white/20 hover:bg-black/90 disabled:bg-gray-600/50 text-white rounded-lg transition-all duration-300 font-medium shadow-lg"
-                    >
-                      {locationLoading ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                          Getting location...
-                        </>
-                      ) : (
-                        <>
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                          </svg>
-                          Use Current Location
-                        </>
-                      )}
-                    </button>
-                  )}
+                      disabled={isFeatureDisabled('search')}
+                      className="w-full"
+                      userCity={userCity}
+                      userCoords={coords}
+                      showCurrentLocationButton={true}
+                      onRequestCurrentLocation={() => {
+                        if (coords.lat && coords.lon) {
+                          const locationData = {
+                            lat: coords.lat,
+                            lon: coords.lon,
+                            address: reverseAddress?.label || `GPS Location (${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)})`,
+                            displayName: reverseAddress?.label || `GPS Location (${coords.lat.toFixed(6)}, ${coords.lon.toFixed(6)})`,
+                            displayPlace: 'Current Location',
+                            displayAddress: reverseAddress?.label || ''
+                          }
+                          handlePickupLocationSelect(locationData)
+                        }
+                      }}
+                    />
+                    {errors.pickup && (
+                      <p className="text-sm text-error">{errors.pickup}</p>
+                    )}
+                  </div>
+                  
+
                 </fieldset>
               )}
 
@@ -751,24 +1006,34 @@ const BookRide = () => {
               {currentStep === STEPS.DROP && (
                 <fieldset className="space-y-4">
                   <legend className="sr-only">Destination Selection</legend>
-                  <AddressSearchInput
-                    id="drop-search"
-                    label="Where to?"
-                    placeholder="Search for destination..."
-                    value={dropLabel}
-                    onLocationSelect={handleDropLocationSelect}
-                    onInputChange={setDropLabel}
-                    disabled={isFeatureDisabled('search')}
-                    className="w-full"
-                    error={errors.drop}
-                    required={true}
-                    icon={
-                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                      </svg>
-                    }
-                  />
+                  <div className="space-y-2">
+                    <label htmlFor="drop-search" className="block text-sm font-medium text-theme-primary">
+                      Where to? {errors.drop && <span className="text-error">*</span>}
+                    </label>
+                    <EnhancedSearchBar
+                      mode="drop"
+                      placeholder="Search for destination..."
+                      value={dropLabel}
+                      onChange={setDropLabel}
+                      onLocationSelect={(location) => {
+                        handleDropLocationSelect({
+                          lat: location.lat,
+                          lon: location.lon,
+                          address: location.label,
+                          displayName: location.label,
+                          displayPlace: location.enhancedLabel || location.label,
+                          displayAddress: location.address?.road || ''
+                        })
+                      }}
+                      disabled={isFeatureDisabled('search')}
+                      className="w-full"
+                      userCity={userCity}
+                      userCoords={coords}
+                    />
+                    {errors.drop && (
+                      <p className="text-sm text-error">{errors.drop}</p>
+                    )}
+                  </div>
                   
                   {/* Show selected pickup location for context */}
                   {pickup && pickupLabel && (
@@ -808,6 +1073,8 @@ const BookRide = () => {
                       pickup={pickup}
                       drop={drop}
                       selectedVehicle={selectedRide}
+                      routeDistance={distanceKm}
+                      routeDuration={durationMin}
                       onFareUpdate={handleFareUpdate}
                       showAdminControls={false}
                       className="w-full mt-4"
@@ -835,6 +1102,8 @@ const BookRide = () => {
                       pickup={pickup}
                       drop={drop}
                       selectedVehicle={selectedRide}
+                      routeDistance={distanceKm}
+                      routeDuration={durationMin}
                       onFareUpdate={handleFareUpdate}
                       showAdminControls={false}
                       className="w-full"
@@ -887,11 +1156,7 @@ const BookRide = () => {
             </button>
             {!canAdvance() && (
               <p id="button-help" className="text-xs text-theme-muted mt-2 font-inter">
-                {currentStep === STEPS.PICKUP && pickupValidationError ? pickupValidationError.message :
-                 currentStep === STEPS.PICKUP && 'Please select a pickup location to continue'}
-                {currentStep === STEPS.DROP && 'Please select a destination to continue'}
-                {currentStep === STEPS.VEHICLE && 'Please choose a vehicle to continue'}
-                {currentStep === STEPS.PAYMENT && 'Please select a payment method to continue'}
+                {getHelpText()}
               </p>
             )}
           </div>

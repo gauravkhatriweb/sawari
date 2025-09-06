@@ -81,6 +81,7 @@ const RideOptionsCarousel = ({
   const [isDragging, setIsDragging] = useState(false) // Whether user is dragging
   const [dragStart, setDragStart] = useState(0) // Initial drag position
   const [dragOffset, setDragOffset] = useState(0) // Current drag offset
+  const [showVehicleSheet, setShowVehicleSheet] = useState(false) // Fallback sheet visibility
 
   // Get vehicle configurations from fare calculator utility
   const vehicleConfigs = useMemo(() => getAllVehicleConfigs(), [])
@@ -356,11 +357,12 @@ const RideOptionsCarousel = ({
         <div className="hidden md:block">
           <div className="overflow-x-auto scrollbar-thin scrollbar-track-white/10 scrollbar-thumb-white/30 hover:scrollbar-thumb-white/50">
             <div 
-              className="flex gap-4 pb-2" 
+              className="flex gap-4 pb-2 scroll-smooth" 
               ref={containerRef}
               role="radiogroup"
               aria-labelledby="ride-options-heading"
               aria-describedby="ride-options-instructions"
+              style={{ scrollSnapType: 'x mandatory' }}
             >
               <div id="ride-options-instructions" className="sr-only">
                 Use arrow keys to navigate between ride options. Press Enter or Space to select.
@@ -415,12 +417,14 @@ const RideOptionsCarousel = ({
               role="radiogroup"
               aria-labelledby="ride-options-heading"
               aria-describedby="ride-options-instructions"
+              style={{ touchAction: 'pan-x' }}
             >
               <motion.div 
                 ref={mobileContainerRef}
                 className="flex transition-transform duration-300 ease-out"
                 style={{
-                  transform: `translateX(calc(-${currentIndex * 100}% + ${isDragging ? dragOffset : 0}px))`
+                  transform: `translateX(calc(-${currentIndex * 100}% + ${isDragging ? dragOffset : 0}px))`,
+                  scrollSnapType: 'x mandatory'
                 }}
                 animate={{
                   x: isDragging ? dragOffset : 0
@@ -432,7 +436,7 @@ const RideOptionsCarousel = ({
                 }}
               >
                 {visibleOptions.map((vehicle, index) => (
-                  <div key={vehicle.id} className="w-full flex-shrink-0 px-2">
+                  <div key={vehicle.id} className="w-full flex-shrink-0 px-2" style={{ scrollSnapAlign: 'center' }}>
                     <VehicleCard
                       vehicle={vehicle}
                       isSelected={selectedId === vehicle.id}
@@ -447,30 +451,122 @@ const RideOptionsCarousel = ({
               </motion.div>
             </div>
             
-            {/* Dots indicator */}
-            <div className="flex justify-center mt-6 gap-3">
-              {visibleOptions.map((_, index) => (
-                <button
-                  key={index}
-                  onClick={() => {
-                    if (!isDisabled) {
-                      setCurrentIndex(index)
-                      onSelect?.(visibleOptions[index].id)
-                    }
-                  }}
-                  disabled={isDisabled}
-                  className={`w-3 h-3 rounded-full transition-all duration-300 border ${
-                    index === currentIndex 
-                      ? 'bg-brand-primary border-brand-primary scale-125 shadow-lg shadow-brand-primary/30' 
-                      : 'bg-white/20 border-white/30 hover:bg-white/40 hover:border-white/50'
-                  } disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-primary/50`}
-                  aria-label={`Go to ${visibleOptions[index]?.name} option`}
-                />
-              ))}
+            {/* Dots indicator and More vehicles button */}
+            <div className="flex flex-col items-center mt-6 gap-4">
+              <div className="flex justify-center gap-3">
+                {visibleOptions.map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => {
+                      if (!isDisabled) {
+                        setCurrentIndex(index)
+                        onSelect?.(visibleOptions[index].id)
+                      }
+                    }}
+                    disabled={isDisabled}
+                    className={`w-3 h-3 rounded-full transition-all duration-300 border ${
+                      index === currentIndex 
+                        ? 'bg-brand-primary border-brand-primary scale-125 shadow-lg shadow-brand-primary/30' 
+                        : 'bg-white/20 border-white/30 hover:bg-white/40 hover:border-white/50'
+                    } disabled:opacity-30 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-primary/50`}
+                    aria-label={`Go to ${visibleOptions[index]?.name} option`}
+                  />
+                ))}
+              </div>
+              
+              {/* More vehicles fallback button */}
+              <button
+                onClick={() => setShowVehicleSheet(true)}
+                disabled={isDisabled}
+                className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-lg text-white/80 text-sm font-inter hover:bg-white/20 hover:border-white/30 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-primary/50"
+                aria-label="View all vehicle options"
+              >
+                <span>More vehicles</span>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </button>
             </div>
           </div>
         </div>
       </div>
+
+      {/* Full-screen Vehicle Selection Sheet */}
+      <AnimatePresence>
+        {showVehicleSheet && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-end md:items-center justify-center p-4"
+            onClick={() => setShowVehicleSheet(false)}
+          >
+            <motion.div
+              initial={{ y: '100%', opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: '100%', opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+              className="bg-theme-surface border border-white/20 rounded-t-2xl md:rounded-2xl w-full max-w-md max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h3 className="text-xl font-semibold text-theme-primary font-poppins">
+                    Select Vehicle
+                  </h3>
+                  <button
+                    onClick={() => setShowVehicleSheet(false)}
+                    className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white/60 hover:text-white transition-all duration-200"
+                    aria-label="Close vehicle selection"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+                
+                <div className="space-y-3 max-h-96 overflow-y-auto">
+                  {visibleOptions.map((vehicle) => (
+                    <button
+                      key={vehicle.id}
+                      onClick={() => {
+                        onSelect?.(vehicle.id)
+                        setShowVehicleSheet(false)
+                      }}
+                      disabled={isDisabled}
+                      className={`w-full p-4 rounded-xl border transition-all duration-200 text-left ${
+                        selectedId === vehicle.id
+                          ? 'bg-brand-primary/20 border-brand-primary text-white'
+                          : 'bg-white/5 border-white/20 text-white/80 hover:bg-white/10 hover:border-white/30'
+                      } disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus:ring-2 focus:ring-brand-primary/50`}
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="text-2xl">{vehicle.icon}</div>
+                        <div className="flex-1">
+                          <div className="font-semibold">{vehicle.name}</div>
+                          <div className="text-sm opacity-70">{vehicle.capacity} • {vehicle.eta}</div>
+                          {vehicle.previewFare > 0 && (
+                            <div className="text-lg font-bold text-brand-primary mt-1">
+                              {formatPKRDisplay(vehicle.previewFare)}
+                            </div>
+                          )}
+                        </div>
+                        {selectedId === vehicle.id && (
+                          <div className="text-brand-primary">
+                            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Selection Microcopy */}
       <AnimatePresence>

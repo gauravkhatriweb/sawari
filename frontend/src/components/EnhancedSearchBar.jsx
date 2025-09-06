@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { getCityBounds } from '../services/cityBounds';
 
 // Enhanced debounce hook with cleanup
 const useDebounce = (callback, delay) => {
@@ -41,7 +42,8 @@ const EnhancedSearchBar = ({
   showCurrentLocationButton = false,
   onRequestCurrentLocation,
   errorHandler, // From LocationErrorHandler
-  userCity = null // Current user's city for biased search
+  userCity = null, // Current user's city for biased search
+  userCoords = null // User coordinates for fallback bounds
 }) => {
   const [internalValue, setInternalValue] = useState(initialValue);
   const [suggestions, setSuggestions] = useState([]);
@@ -50,6 +52,8 @@ const EnhancedSearchBar = ({
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const [isFocused, setIsFocused] = useState(false);
+  const [isSearchingWider, setIsSearchingWider] = useState(false);
+  const [showSearchWider, setShowSearchWider] = useState(false);
   
   // Use external value if provided, otherwise use internal state
   const value = typeof externalValue !== 'undefined' ? externalValue : internalValue;
@@ -131,14 +135,18 @@ const EnhancedSearchBar = ({
         dedupe: '1'
       });
       
-      // Add viewbox for city-biased search if userCity is available
-      if (mode === 'drop' && userCity) {
-        // Karachi viewbox coordinates (approximate)
-        if (userCity.toLowerCase().includes('karachi')) {
-          params.append('viewbox', '66.9,25.3,67.3,24.7'); // Karachi bounds
-          params.append('bounded', '1');
+      // Add viewbox for city-biased search if userCity is available and not searching wider
+      if (mode === 'drop' && userCity && !isSearchingWider) {
+        try {
+          const cityBounds = await getCityBounds(userCity, userCoords);
+          if (cityBounds && cityBounds.viewbox) {
+            params.append('viewbox', cityBounds.viewbox);
+            params.append('bounded', '1');
+          }
+        } catch (error) {
+          console.warn('Failed to get city bounds, continuing without viewbox:', error);
+          // Continue without viewbox - will still have city bias from query
         }
-        // Add more cities as needed
       }
       
       const response = await fetch(
@@ -171,11 +179,28 @@ const EnhancedSearchBar = ({
       
       const formattedSuggestions = data
         .filter(item => {
-          // For drop mode, filter to current city only
-          if (mode === 'drop' && userCity) {
+          // For drop mode, filter to current city only (unless searching wider)
+          if (mode === 'drop' && userCity && !isSearchingWider) {
             const itemCity = item.address?.city || item.address?.town || item.address?.village || '';
-            return itemCity.toLowerCase().includes(userCity.toLowerCase()) || 
-                   item.display_name.toLowerCase().includes(userCity.toLowerCase());
+            const itemState = item.address?.state || '';
+            const displayName = item.display_name.toLowerCase();
+            const userCityLower = userCity.toLowerCase();
+            
+            // Check if location is within the same city
+            const cityMatch = itemCity.toLowerCase().includes(userCityLower) ||
+                             itemState.toLowerCase().includes(userCityLower) ||
+                             displayName.includes(userCityLower);
+            
+            // For twin cities (Islamabad/Rawalpindi), allow both
+            if (userCityLower.includes('islamabad') || userCityLower.includes('rawalpindi')) {
+              return cityMatch || 
+                     itemCity.toLowerCase().includes('islamabad') ||
+                     itemCity.toLowerCase().includes('rawalpindi') ||
+                     displayName.includes('islamabad') ||
+                     displayName.includes('rawalpindi');
+            }
+            
+            return cityMatch;
           }
           return true;
         })
@@ -225,8 +250,11 @@ const EnhancedSearchBar = ({
       const limitedSuggestions = formattedSuggestions.slice(0, 6);
 
       setSuggestions(limitedSuggestions);
-      setIsOpen(limitedSuggestions.length > 0);
+      setIsOpen(limitedSuggestions.length > 0 || (limitedSuggestions.length === 0 && mode === 'drop' && userCity && !isSearchingWider));
       setSelectedIndex(-1);
+      
+      // Show search wider option if no results found in city-scoped search
+      setShowSearchWider(limitedSuggestions.length === 0 && mode === 'drop' && userCity && !isSearchingWider && value.length >= 2);
 
     } catch (err) {
       if (err.name === 'AbortError') return;
@@ -253,6 +281,21 @@ const EnhancedSearchBar = ({
       setIsLoading(false);
     }
   }, 300); // Reduced to 300ms as requested
+
+  // Search wider function
+  const handleSearchWider = useCallback(() => {
+    setIsSearchingWider(true);
+    setShowSearchWider(false);
+    debouncedSearch(value, 0);
+  }, [value, debouncedSearch]);
+
+  // Reset search wider when input changes
+  useEffect(() => {
+    if (isSearchingWider && value.length < 2) {
+      setIsSearchingWider(false);
+      setShowSearchWider(false);
+    }
+  }, [value, isSearchingWider]);
 
   // Enhanced input change handler
   const handleInputChange = useCallback((e) => {
@@ -586,10 +629,28 @@ const EnhancedSearchBar = ({
                   <svg className="w-12 h-12 mx-auto mb-3 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
-                  <p className="text-lg font-semibold font-poppins mb-2">No locations found</p>
-                  <p className="text-sm opacity-70 font-inter mb-4">Try a different search term</p>
+                  <p className="text-lg font-semibold font-poppins mb-2">
+                    {showSearchWider ? `No locations found in ${userCity}` : 'No locations found'}
+                  </p>
+                  <p className="text-sm opacity-70 font-inter mb-4">
+                    {showSearchWider ? 'Try searching in nearby cities or all of Pakistan' : 'Try a different search term'}
+                  </p>
                   
-                  {mode === 'drop' && (
+                  {showSearchWider && (
+                    <div className="mb-6">
+                      <button
+                        onClick={handleSearchWider}
+                        className="px-6 py-3 bg-brand-primary text-white rounded-xl text-sm font-semibold font-inter hover:bg-brand-primary/90 transition-colors min-h-[44px] focus:outline-none focus:ring-2 focus:ring-brand-primary/30 flex items-center gap-2 mx-auto"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        Search all Pakistan
+                      </button>
+                    </div>
+                  )}
+                  
+                  {mode === 'drop' && !showSearchWider && (
                     <div className="mt-4">
                       <p className="text-sm font-medium font-inter mb-3 text-theme-primary">Don't know the exact address?</p>
                       <div className="space-y-2">

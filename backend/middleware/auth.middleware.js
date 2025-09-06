@@ -32,10 +32,22 @@ export const verifyPassengerJWT = async (req, res, next) => {
         next();
         
     } catch (error) {
-        console.error('JWT verification error:', error);
+        // Only log JWT errors in development mode to reduce console spam
+        if (process.env.NODE_ENV === 'development') {
+            console.error('JWT verification error:', error.name, error.message);
+        }
+        
+        // Clear invalid token cookie
+        res.clearCookie('accessToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict"
+        });
+        
         return res.status(401).json({
             success: false,
-            message: "Invalid access token"
+            message: "Invalid or expired access token. Please login again.",
+            code: "TOKEN_INVALID"
         });
     }
 };
@@ -70,10 +82,22 @@ export const verifyCaptainJWT = async (req, res, next) => {
         next();
         
     } catch (error) {
-        console.error('JWT verification error:', error);
+        // Only log JWT errors in development mode to reduce console spam
+        if (process.env.NODE_ENV === 'development') {
+            console.error('JWT verification error:', error.name, error.message);
+        }
+        
+        // Clear invalid token cookie
+        res.clearCookie('accessToken', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "strict"
+        });
+        
         return res.status(401).json({
             success: false,
-            message: "Invalid access token"
+            message: "Invalid or expired access token. Please login again.",
+            code: "TOKEN_INVALID"
         });
     }
 };

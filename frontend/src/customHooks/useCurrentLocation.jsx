@@ -46,6 +46,7 @@ const useCurrentLocation = (options = {}) => {
   const [loading, setLoading] = useState(false); // Loading state for location requests
   const [error, setError] = useState(null); // Error messages from geolocation or API
   const [address, setAddress] = useState(null); // Reverse geocoded address object
+  const [userCity, setUserCity] = useState(null); // Extracted city name for search scoping
   const [permission, setPermission] = useState('prompt'); // Permission status: 'granted', 'denied', 'prompt'
   
   // Refs for managing geolocation watching and API requests
@@ -112,10 +113,17 @@ const useCurrentLocation = (options = {}) => {
 
       const data = await response.json();
       
+      // Extract city with fallback priority: city → town → village → county → state
+      const extractedCity = data.address?.city || 
+                           data.address?.town || 
+                           data.address?.village || 
+                           data.address?.county || 
+                           data.address?.state || '';
+
       // Parse LocationIQ response to standardized address format
       const parsedAddress = {
         label: data.display_name || 'Address not available', // Full formatted address
-        city: data.address?.city || data.address?.town || '', // City or town name
+        city: extractedCity, // Extracted city name with fallbacks
         state: data.address?.state || '', // State/province
         country: data.address?.country || '', // Country name
         postcode: data.address?.postcode || '', // Postal code
@@ -160,6 +168,11 @@ const useCurrentLocation = (options = {}) => {
     try {
       const addressResult = await reverseGeocode(latitude, longitude);
       setAddress(addressResult);
+      
+      // Extract and cache user city for search scoping
+      if (addressResult?.city) {
+        setUserCity(addressResult.city);
+      }
     } catch (error) {
       console.warn('Reverse geocoding failed:', error);
       // Provide fallback address with coordinates
@@ -171,6 +184,7 @@ const useCurrentLocation = (options = {}) => {
         postcode: '',
         error: 'Address lookup failed'
       });
+      setUserCity(null);
     } finally {
       setLoading(false);
     }
@@ -188,6 +202,7 @@ const useCurrentLocation = (options = {}) => {
     setLoading(false);
     setCoords({ lat: null, lon: null });
     setAddress(null);
+    setUserCity(null);
     
     switch (error.code) {
       case error.PERMISSION_DENIED:
@@ -333,6 +348,7 @@ const useCurrentLocation = (options = {}) => {
     loading,             // boolean - Loading state for location requests
     error,               // string|null - Error message if location request failed
     address,             // object|null - Reverse geocoded address information
+    userCity,            // string|null - Extracted city name for search scoping
     permission,          // string - Permission status: 'granted', 'denied', 'prompt'
     getCurrentPosition,  // function - Get current position once
     startWatching,       // function - Start continuous location monitoring

@@ -6,7 +6,8 @@
  * Features real-time updates, admin controls, and detailed breakdown display.
  * 
  * Key Features:
- * - Real-time fare calculation using Haversine formula
+ * - Real-time fare calculation using actual route distance when available
+ * - Fallback to Haversine formula when route data unavailable
  * - Multiple vehicle types (bike, auto, car)
  * - Dynamic pricing based on distance and time
  * - Fuel efficiency and operational cost considerations
@@ -20,7 +21,7 @@
  * - Base fare + (distance × per-km rate) + (time × per-minute rate)
  * - Includes fuel costs based on efficiency and petrol prices
  * - Applies operational margin for business sustainability
- * - Considers average speed for time estimation
+ * - Uses actual route distance/duration when provided, otherwise estimates
  * 
  * Vehicle Types:
  * - Bike: Most economical, highest fuel efficiency
@@ -33,6 +34,8 @@
  *   pickup={{ lat: 24.8607, lng: 67.0011 }}
  *   drop={{ lat: 24.8615, lng: 67.0099 }}
  *   selectedVehicle="bike"
+ *   routeDistance={5.2} // km from actual route
+ *   routeDuration={15} // minutes from actual route
  *   onFareUpdate={(fare) => setCalculatedFare(fare)}
  *   showAdminControls={isAdmin}
  * />
@@ -102,6 +105,8 @@ const OPERATIONAL_MARGIN = 1.15 // 15% margin for operational costs
  * @param {Object} pickup - Pickup location coordinates {lat, lng}
  * @param {Object} drop - Drop location coordinates {lat, lng}
  * @param {string} selectedVehicle - Vehicle type ('bike', 'auto', 'car')
+ * @param {number} routeDistance - Actual route distance in km (optional)
+ * @param {number} routeDuration - Actual route duration in minutes (optional)
  * @param {Function} onFareUpdate - Callback when fare is calculated
  * @param {string} className - Additional CSS classes
  * @param {boolean} showAdminControls - Whether to show admin adjustment controls
@@ -110,6 +115,8 @@ const FareCalculator = ({
   pickup, 
   drop, 
   selectedVehicle = 'bike',
+  routeDistance = null,
+  routeDuration = null,
   onFareUpdate,
   className = '',
   showAdminControls = false
@@ -119,15 +126,25 @@ const FareCalculator = ({
   const [petrolPrice, setPetrolPrice] = useState(DEFAULT_PETROL_PRICE)
   const [vehicleConfig, setVehicleConfig] = useState(DEFAULT_VEHICLE_CONFIG)
 
-  // Calculate distance and duration
-  const { distance, duration } = useMemo(() => {
+  // Calculate distance and duration - use route data when available, fallback to Haversine
+  const { distance, duration, isEstimated } = useMemo(() => {
     if (!pickup || !drop) {
-      return { distance: 0, duration: 0 }
+      return { distance: 0, duration: 0, isEstimated: false }
     }
 
+    // Use actual route distance and duration when available
+    if (routeDistance !== null && routeDuration !== null) {
+      return {
+        distance: Math.round(routeDistance * 100) / 100, // Round to 2 decimal places
+        duration: Math.round(routeDuration),
+        isEstimated: false
+      }
+    }
+
+    // Fallback to Haversine calculation
     const distanceKm = calculateDistance(
-      pickup.lat, pickup.lon,
-      drop.lat, drop.lon
+      pickup.lat, pickup.lng || pickup.lon,
+      drop.lat, drop.lng || drop.lon
     )
 
     const config = vehicleConfig[selectedVehicle]
@@ -137,7 +154,8 @@ const FareCalculator = ({
       const durationMin = (distanceKm / fallbackConfig.avgSpeed) * 60
       return {
         distance: Math.round(distanceKm * 100) / 100,
-        duration: Math.round(durationMin)
+        duration: Math.round(durationMin),
+        isEstimated: true
       }
     }
     
@@ -145,9 +163,10 @@ const FareCalculator = ({
 
     return {
       distance: Math.round(distanceKm * 100) / 100, // Round to 2 decimal places
-      duration: Math.round(durationMin)
+      duration: Math.round(durationMin),
+      isEstimated: true
     }
-  }, [pickup, drop, selectedVehicle, vehicleConfig])
+  }, [pickup, drop, selectedVehicle, vehicleConfig, routeDistance, routeDuration])
 
   // Calculate fare breakdown
   const fareBreakdown = useMemo(() => {
@@ -208,9 +227,21 @@ const FareCalculator = ({
       {/* Main Fare Display */}
       <div className="p-4">
         <div className="flex items-center justify-between mb-3">
-          <h3 className="text-lg font-semibold text-white font-inter">
-            Estimated Fare
-          </h3>
+          <div className="flex items-center space-x-2">
+            <h3 className="text-lg font-semibold text-white font-inter">
+              {isEstimated ? 'Estimated Fare' : 'Route Fare'}
+            </h3>
+            {!isEstimated && (
+              <span className="px-2 py-1 bg-green-500/20 text-green-400 text-xs rounded-full border border-green-500/30 font-inter">
+                Actual Route
+              </span>
+            )}
+            {isEstimated && (
+              <span className="px-2 py-1 bg-yellow-500/20 text-yellow-400 text-xs rounded-full border border-yellow-500/30 font-inter">
+                Estimated
+              </span>
+            )}
+          </div>
           {showAdminControls && (
             <button
               onClick={() => setShowAdminPanel(!showAdminPanel)}
@@ -246,7 +277,10 @@ const FareCalculator = ({
         </div>
 
         <p className="text-xs text-white/50 mt-2 font-inter">
-          Estimation based on current petrol PKR {petrolPrice}/L & typical vehicle efficiency. Final price may vary.
+          {isEstimated 
+            ? `Estimation based on straight-line distance, petrol PKR ${petrolPrice}/L & typical vehicle efficiency. Final price may vary.`
+            : `Based on actual route distance, petrol PKR ${petrolPrice}/L & typical vehicle efficiency. Final price may vary.`
+          }
         </p>
       </div>
 
