@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import connectDB from './config/connectDB.js';
 import passengerRoutes from './routes/passenger.route.js';
 import captainRoutes from './routes/captain.route.js';
+import rideRoutes from './routes/ride.route.js';
 
 // Load environment variables
 dotenv.config();
@@ -69,6 +70,7 @@ app.get('/', (req, res) => {
 // API Routes
 app.use('/api/passengers', passengerRoutes);
 app.use('/api/captain', captainRoutes);
+app.use('/api/rides', rideRoutes);
 
 // Global error handling middleware
 app.use((err, req, res, next) => {

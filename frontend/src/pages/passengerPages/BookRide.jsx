@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'react-toastify'
+import { useUser } from '../../context/UserContext'
 import LiveMap from '../../components/LiveMap'
 import EnhancedSearchBar from '../../components/EnhancedSearchBar'
 import useCurrentLocation from '../../customHooks/useCurrentLocation'
@@ -31,6 +32,9 @@ const STEPS = {
 
 const BookRide = () => {
   const navigate = useNavigate()
+  
+  // Authentication check
+  const { user, isAuthenticated, isInitialized } = useUser()
   
   // Network status monitoring
   const networkStatus = useNetworkStatus()
@@ -139,6 +143,14 @@ const BookRide = () => {
       setLocationPermissionDenied(false)
     }
   }, [locationError])
+
+  // Authentication check - redirect if not logged in
+  useEffect(() => {
+    if (isInitialized && (!isAuthenticated || !user || user.type !== 'passenger')) {
+      toast.error('Please log in to book a ride')
+      navigate('/passenger/login')
+    }
+  }, [isAuthenticated, user, navigate, isInitialized])
 
   // Handle offline mode restrictions
   const isFeatureDisabled = useCallback((feature) => {
@@ -1178,7 +1190,7 @@ const BookRide = () => {
         pickup={pickupLabel}
         drop={dropLabel}
         vehicle={currentRide}
-        fare={calculatedFare || currentRideFare}
+        fare={allVehicleFares[selectedRide] || calculatedFare || { breakdown: { total: currentRideFare }, details: { distanceKm: distanceKm, durationMin: durationMin } }}
         payment={payment}
         isRequestDisabled={!isPaymentValid}
       />
